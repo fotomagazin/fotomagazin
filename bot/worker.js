@@ -3,7 +3,8 @@
 // Что умеет:
 //  • люди пишут боту в Telegram — сообщения (текст, скриншоты, файлы) приходят владельцу;
 //    владелец отвечает «Ответить» на сообщении — бот пересылает ответ человеку;
-//  • форма отзыва в программе и на сайте шлёт POST /feedback — отзыв приходит владельцу в Telegram.
+//  • форма отзыва в программе и на сайте шлёт POST /feedback — отзыв приходит владельцу в Telegram;
+//  • GET /downloads — сколько раз скачали программу с GitHub (запасной путь для счётчика на сайте).
 //
 // Секреты (задаются командой `wrangler secret put`, в коде их нет):
 //  BOT_TOKEN       — токен бота от @BotFather;
@@ -21,7 +22,7 @@ const MONTH = 60 * 60 * 24 * 30;
 
 const CORS = {
   'access-control-allow-origin': '*',
-  'access-control-allow-methods': 'POST, OPTIONS',
+  'access-control-allow-methods': 'GET, POST, OPTIONS',
   'access-control-allow-headers': 'content-type',
   'access-control-max-age': '86400',
 };
@@ -32,6 +33,7 @@ export default {
     const url = new URL(req.url);
     if (req.method === 'OPTIONS') return new Response(null, { headers: CORS });
     if (url.pathname === '/feedback' && req.method === 'POST') return feedback(req, env);
+    if (url.pathname === '/downloads') return downloads(env);
     if (url.pathname === '/telegram' && req.method === 'POST') {
       if (req.headers.get('x-telegram-bot-api-secret-token') !== env.WEBHOOK_SECRET) return new Response('forbidden', { status: 403 });
       try { await onUpdate(await req.json(), env); } catch (e) { console.error(e); }
@@ -117,4 +119,20 @@ async function feedback(req, env) {
   if (d.contact) lines.push('', 'Контакт: ' + esc(String(d.contact).slice(0, 100)));
   const r = await TG(env, 'sendMessage', { chat_id: owner, text: lines.join('\n'), parse_mode: 'HTML', link_preview_options: { is_disabled: true } });
   return r.ok ? json({ ok: true }) : json({ ok: false, error: 'telegram' }, 502);
+}
+
+// ---------- счётчик скачиваний: сумма по всем релизам на GitHub, кэш на 15 минут ----------
+async function downloads(env) {
+  const cached = JSON.parse(await env.KV.get('dl') || 'null');
+  if (cached && Date.now() - cached.t < 15 * 60 * 1000) return json({ count: cached.n });
+  try {
+    const r = await fetch('https://api.github.com/repos/fotomagazin/fotomagazin/releases?per_page=100',
+      { headers: { 'user-agent': 'fotomagazin-bot', accept: 'application/vnd.github+json' } });
+    if (!r.ok) throw Error('github ' + r.status);
+    const n = (await r.json()).reduce((s, rel) => s + rel.assets.reduce((a, x) => a + x.download_count, 0), 0);
+    await env.KV.put('dl', JSON.stringify({ n, t: Date.now() }));
+    return json({ count: n });
+  } catch (e) {   // GitHub не ответил — отдаём последнее известное число
+    return cached ? json({ count: cached.n, stale: true }) : json({ count: null }, 503);
+  }
 }
