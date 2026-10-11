@@ -1,0 +1,6 @@
+# сайт живёт в отдельном репозитории fotomagazin/fotomagazin.github.io
+site/
+# служебное
+.DS_Store
+node_modules/
+.wrangler/

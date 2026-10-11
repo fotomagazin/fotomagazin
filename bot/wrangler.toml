@@ -1,0 +1,9 @@
+# Фотомагазин — бот обратной связи (Cloudflare Worker)
+name = "fotomagazin-bot"
+main = "worker.js"
+compatibility_date = "2025-09-01"
+workers_dev = true
+
+[[kv_namespaces]]
+binding = "KV"
+id = "1f057b437e584581996764024fe98a42"
