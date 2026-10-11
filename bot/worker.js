@@ -4,7 +4,8 @@
 //  • люди пишут боту в Telegram — сообщения (текст, скриншоты, файлы) приходят владельцу;
 //    владелец отвечает «Ответить» на сообщении — бот пересылает ответ человеку;
 //  • форма отзыва в программе и на сайте шлёт POST /feedback — отзыв приходит владельцу в Telegram;
-//  • GET /downloads — сколько раз скачали программу с GitHub (запасной путь для счётчика на сайте).
+//  • GET /downloads — сколько раз скачали программу с GitHub и какая версия последняя
+//    (запасной путь для счётчика на сайте и проверки обновлений в программе).
 //
 // Секреты (задаются командой `wrangler secret put`, в коде их нет):
 //  BOT_TOKEN       — токен бота от @BotFather;
@@ -121,18 +122,20 @@ async function feedback(req, env) {
   return r.ok ? json({ ok: true }) : json({ ok: false, error: 'telegram' }, 502);
 }
 
-// ---------- счётчик скачиваний: сумма по всем релизам на GitHub, кэш на 15 минут ----------
+// ---------- счётчик скачиваний и последняя версия: данные релизов с GitHub, кэш на 15 минут ----------
 async function downloads(env) {
   const cached = JSON.parse(await env.KV.get('dl') || 'null');
-  if (cached && Date.now() - cached.t < 15 * 60 * 1000) return json({ count: cached.n });
+  if (cached && Date.now() - cached.t < 15 * 60 * 1000) return json({ count: cached.n, latest: cached.latest || null });
   try {
     const r = await fetch('https://api.github.com/repos/fotomagazin/fotomagazin/releases?per_page=100',
       { headers: { 'user-agent': 'fotomagazin-bot', accept: 'application/vnd.github+json' } });
     if (!r.ok) throw Error('github ' + r.status);
-    const n = (await r.json()).reduce((s, rel) => s + rel.assets.reduce((a, x) => a + x.download_count, 0), 0);
-    await env.KV.put('dl', JSON.stringify({ n, t: Date.now() }));
-    return json({ count: n });
+    const rels = await r.json(), n = rels.reduce((s, rel) => s + rel.assets.reduce((a, x) => a + x.download_count, 0), 0);
+    const L = rels.find(x => !x.draft && !x.prerelease);
+    const latest = L ? { tag: L.tag_name, name: L.name, url: L.html_url, notes: (L.body || '').slice(0, 600) } : null;
+    await env.KV.put('dl', JSON.stringify({ n, latest, t: Date.now() }));
+    return json({ count: n, latest });
   } catch (e) {   // GitHub не ответил — отдаём последнее известное число
-    return cached ? json({ count: cached.n, stale: true }) : json({ count: null }, 503);
+    return cached ? json({ count: cached.n, latest: cached.latest || null, stale: true }) : json({ count: null }, 503);
   }
 }
