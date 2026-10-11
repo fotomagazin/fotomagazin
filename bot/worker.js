@@ -136,6 +136,6 @@ async function downloads(env) {
     await env.KV.put('dl', JSON.stringify({ n, latest, t: Date.now() }));
     return json({ count: n, latest });
   } catch (e) {   // GitHub не ответил — отдаём последнее известное число
-    return cached ? json({ count: cached.n, latest: cached.latest || null, stale: true }) : json({ count: null }, 503);
+    return cached ? json({ count: cached.n, latest: cached.latest || null, stale: true }) : json({ count: null, error: String(e.message || e) }, 503);
   }
 }
