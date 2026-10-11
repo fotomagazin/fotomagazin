@@ -341,7 +341,7 @@ input[type=range]:hover::-webkit-slider-thumb{transform:scale(1.15)}
       <div class="body" id="layerProps"></div>
     </div>
     <div class="sec">
-      <h3><span class="ttl">Camera Raw</span><button id="rawReset">Сбросить</button></h3>
+      <h3><span class="ttl">Свет и цвет</span><button id="rawReset">Сбросить</button></h3>
       <div class="body"><div class="note">Применяется к выбранному слою. Двойной клик по ползунку или названию — сброс в ноль.</div><div id="rawProps"></div></div>
     </div>
     <div class="sec">
@@ -397,7 +397,7 @@ input[type=range]:hover::-webkit-slider-thumb{transform:scale(1.15)}
 const $ = s => document.querySelector(s);
 const view = $('#view'), cv = $('#c'), ctx = cv.getContext('2d'), ov = $('#o'), octx = ov.getContext('2d');
 const MAC = /Mac|iPhone|iPad/.test(navigator.platform), MOD = MAC ? '⌘' : 'Ctrl';
-const APP_BUILD = '0.1.1';   // номер этой версии — совпадает с тегом релиза на GitHub (v0.1.1)
+const APP_BUILD = '0.1.2';   // номер этой версии — совпадает с тегом релиза на GitHub (v0.1.2)
 const APP_VERSION = APP_BUILD + ' бета';
 // куда уходят отзывы из формы (сервер бота на Cloudflare)
 const FEEDBACK_API = 'https://fotomagazin-bot.fotomagazin.workers.dev/feedback';
@@ -468,7 +468,7 @@ addEventListener('pointerdown', e => { if (!e.target.closest('#hist,#histBtn')) 
   if (!e.target.closest('#updMenu,#updBtn')) $('#updMenu').style.display = 'none'; });
 $('#undoBtn').onclick = () => gotoH(hpos - 1); $('#redoBtn').onclick = () => gotoH(hpos + 1);
 
-// ---------- WebGL: обработка Camera Raw + цветокоррекции ----------
+// ---------- WebGL: обработка «Света и цвета» + цветокоррекции ----------
 const glc = mk(1, 1);
 const gl = glc.getContext('webgl', { premultipliedAlpha: false, preserveDrawingBuffer: true, antialias: false });
 const MAXT = gl ? Math.min(gl.getParameter(gl.MAX_TEXTURE_SIZE), 16384) : 8192;
@@ -800,13 +800,13 @@ function updateMaskUI() {
   $('#bTarget').textContent = has && L.target === 'mask' ? '[по маске]' : '';
 }
 
-// Camera Raw
+// Свет и цвет
 const RP = $('#rawProps');
 [['te', 'Температура', -100, 100, 1, 'tempRow'], ['ti', 'Оттенок', -100, 100, 1, 'tintRow'],
  ['ex', 'Экспозиция', -5, 5, .05], ['co', 'Контрастность'], ['hi', 'Светлые'], ['sh', 'Тени'], ['vi', 'Красочность'], ['sa', 'Насыщенность']]
 .forEach(([k, name, mn = -100, mx = 100, st = 1, cls]) =>
   row(RP, name, mn, mx, st, () => cur() ? cur().adj[k] : 0, v => { if (cur()) { cur().adj[k] = v; scheduleAdj(); } }, 0, cls));
-$('#rawReset').onclick = layerOp('Сброс Camera Raw', L => Object.assign(L.adj, { ex: 0, co: 0, hi: 0, sh: 0, vi: 0, sa: 0, ti: 0, te: 0 }));
+$('#rawReset').onclick = layerOp('Сброс: свет и цвет', L => Object.assign(L.adj, { ex: 0, co: 0, hi: 0, sh: 0, vi: 0, sa: 0, ti: 0, te: 0 }));
 
 // Цветовые круги: тени / средние / света
 const wheelSync = [];
@@ -2063,7 +2063,7 @@ async function checkUpdate() {
   const v = r.tag.replace(/^v/, ''); if (isNewer(v, APP_BUILD)) showUpdate(v.replace(/\.0$/, ''), r);   // «0.2.0» показываем как «0.2»
 }
 setTimeout(checkUpdate, 3000);
-if (!gl) toast('WebGL недоступен — Camera Raw и цветокоррекция работать не будут', 8000);
+if (!gl) toast('WebGL недоступен — «Свет и цвет» и цветокоррекция работать не будут', 8000);
 refreshAll();
 </script>
 </body>
