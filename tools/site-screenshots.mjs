@@ -1,4 +1,4 @@
-// Скриншоты программы для сайта (ретина ×2): node tools/site-screenshots.mjs "$PWD/app/fotomagazin.html" "$PWD/site/assets" /tmp/fm-chrome
+// Скриншоты программы для сайта (ретина ×2) + картинки стилей и эффектов (с 0.2): node tools/site-screenshots.mjs "$PWD/app/fotomagazin.html" "$PWD/site/assets" /tmp/fm-chrome
 import { spawn } from 'node:child_process';
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
@@ -96,7 +96,7 @@ await ev(async () => {
     const n = mk(256, 256), nx = n.getContext('2d'), id = nx.createImageData(256, 256);
     for (let i = 0; i < id.data.length; i += 4) { const v = rnd() * 255; id.data[i] = id.data[i + 1] = id.data[i + 2] = v; id.data[i + 3] = 22; }
     nx.putImageData(id, 0, 0); x.globalCompositeOperation = 'overlay'; x.fillStyle = x.createPattern(n, 'repeat'); x.fillRect(0, 0, W, H);
-    // «исходник»: плоский и холодный — чтобы правка в Camera Raw была заметна
+    // «исходник»: плоский и холодный — чтобы правка в «Свете и цвете» была заметна
     x.globalCompositeOperation = 'saturation'; x.globalAlpha = .45; x.fillStyle = '#808080'; x.fillRect(0, 0, W, H);
     x.globalCompositeOperation = 'source-over'; x.globalAlpha = .2; x.fillStyle = '#6f84a6'; x.fillRect(0, 0, W, H); x.globalAlpha = 1;
     return c;
@@ -119,34 +119,55 @@ await ev(async () => {
   await new Promise(r => setTimeout(r, 600));
 });
 
-// 1. главный экран
+// разделы правой панели — по названию (их порядок менялся между версиями)
+await ev(() => { window.secBy = t => [...document.querySelectorAll('.sec')].find(s => s.querySelector('.ttl').textContent === t);
+  window.only = list => document.querySelectorAll('.sec').forEach(s => s.classList.toggle('collapsed', !list.includes(s.querySelector('.ttl').textContent)));
+  window.R = el => { const b = el.getBoundingClientRect(); return { x: b.x, y: b.y, width: b.width, height: b.height }; }; });
+const settle = () => ev(async () => { scheduleStyleThumbs(); drawCurves(); $('#toast').style.display = 'none'; await new Promise(r => setTimeout(r, 500)); });
+
+// 1. главный экран: справа слои и стили (миниатюры — это фото в каждом стиле)
+await ev(() => { sel = 0; setTool('move'); refreshAll(); only(['Слои', 'Стили', 'Свет и цвет']); });
+await settle();
 await shot('hero', { x: 0, y: 0, width: 1600, height: 1000 }, 88);
 
-// 2. слои и Camera Raw крупно
-const rects = await ev(async () => {
-  sel = 0; refreshAll(); const secs = document.querySelectorAll('.sec');
-  secs[1].classList.add('collapsed'); await new Promise(r => setTimeout(r, 300));
-  const R = el => { const b = el.getBoundingClientRect(); return { x: b.x, y: b.y, width: b.width, height: b.height }; };
-  return { layers: R(secs[0]), raw: R(secs[2]), wheels: R(secs[3]) };
-});
-await shot('layers', rects.layers); await shot('raw', rects.raw); await shot('wheels', rects.wheels);
+// 2. панели крупно: слои, свет и цвет, круги, стили, кривые, детали
+await ev(() => only(['Слои', 'Свет и цвет', 'Цветокоррекция'])); await settle();
+await shot('layers', await ev(() => R(secBy('Слои'))));
+await shot('raw', await ev(() => R(secBy('Свет и цвет')))); await shot('wheels', await ev(() => R(secBy('Цветокоррекция'))));
+await ev(() => { only(['Стили']); applyLook(styleById('cinema')); }); await settle();
+await shot('styles', await ev(() => R(secBy('Стили'))));
+await ev(() => { applyLook(null); only(['Кривые']); const P = cur(); P.adj.cv = { rgb: [[0, 8], [62, 46], [150, 162], [255, 250]], b: [[0, 22], [255, 238]] }; applyAdj(P); refreshAll(); }); await settle();
+await shot('curves', await ev(() => R(secBy('Кривые'))));
+await ev(() => { const P = cur(); P.adj.cv = null; Object.assign(P.adj, { sp: 35, vg: 30, gr: 25 }); only(['Детали и эффекты']); applyAdj(P); refreshAll(); }); await settle();
+await shot('fx', await ev(() => R(secBy('Детали и эффекты'))));
+await ev(() => { const P = cur(); Object.assign(P.adj, { sp: 0, vg: 0, gr: 0 }); applyAdj(P); refreshAll(); });
 
-// 3. кадрирование 4:5
+// 3. окно программы со стилем «Кино» (вкладка «Стили»)
+await ev(() => { sel = 0; applyLook(styleById('cinema')); only(['Слои', 'Стили']); setTool('move'); refreshAll(); }); await settle();
+await shot('styles-win', { x: 0, y: 0, width: 1296, height: 1000 });
+await ev(() => { applyLook(null); only(['Слои', 'Слой', 'Свет и цвет']); refreshAll(); });
+
+// 4. окно «Экспорт»: WebP для Instagram
+await ev(async () => { openExport(); EX.fmt = 'webp'; EX.q = 85; EX.size = 'ig'; $('#exName').value = 'Алтай_instagram'; syncExport(); await new Promise(r => setTimeout(r, 2500)); });
+await shot('export', await ev(() => R(document.querySelector('.ex'))));
+await ev(() => { EX.fmt = 'jpeg'; EX.q = 90; EX.size = 'orig'; syncExport(); closeExport(); });
+
+// 5. кадрирование 4:5
 await ev(async () => {
-  document.querySelectorAll('.sec')[1].classList.remove('collapsed'); sel = 1; refreshAll();
+  sel = 1; refreshAll();
   setTool('crop'); $('#cRatio').value = '4:5'; $('#cRatio').onchange(); resetCrop();
   const c = crop, k = .82; crop = { x: c.x + c.w * (1 - k) * .75, y: c.y + c.h * (1 - k) * .4, w: c.w * k, h: c.h * k }; updateCropUI(); renderOverlay();
 });
 await shot('crop', { x: 0, y: 0, width: 1296, height: 1000 });
 
-// 4. выделение овалом вокруг солнца
+// 6. выделение овалом вокруг солнца
 await ev(async () => {
   setTool('select'); setSelMode('ellipse'); sel = 0; refreshAll();
   setSelection([{ type: 'ellipse', op: 'add', x: 1920 - 290, y: 940 - 290, w: 580, h: 580 }]);
 });
 await shot('select', { x: 0, y: 0, width: 1296, height: 1000 });
 
-// 5. редактирование текста прямо на фото
+// 7. редактирование текста прямо на фото
 await ev(async () => {
   setSelection([]); setTool('text'); const T = layers[1]; sel = 1; refreshAll(); startTextEdit(T, false);
   await new Promise(r => setTimeout(r, 200)); ta.setSelectionRange(5, 5);
@@ -154,13 +175,29 @@ await ev(async () => {
 await shot('text', { x: 0, y: 0, width: 1296, height: 1000 });
 await ev(() => endTextEdit());
 
-// 6. до / после — сама картинка
-const ba = await ev(async () => {
-  const P = layers[0], adj = JSON.parse(JSON.stringify(P.adj));
-  const out = () => { const c = compositeCanvas([P]), s = mk(2400, 1600); const x = s.getContext('2d'); x.imageSmoothingQuality = 'high'; x.drawImage(c, 0, 0, 2400, 1600); return s.toDataURL('image/jpeg', .86); };
-  const after = out(); P.adj = newAdj(); applyAdj(P); const before = out(); P.adj = adj; applyAdj(P);
-  return { before, after };
+// 8. картинки для сайта (только фото, без текста): до/после, стили, эффекты
+const pics = await ev(async () => {
+  const P = layers[0], adj = JSON.parse(JSON.stringify(P.adj)), out = {};
+  const pic = (w, h, rc) => { const c = compositeCanvas([P]), s = mk(w, h), x = s.getContext('2d'); x.imageSmoothingQuality = 'high';
+    rc ? x.drawImage(c, ...rc, 0, 0, w, h) : x.drawImage(c, 0, 0, w, h); return s.toDataURL('image/jpeg', .85); };
+  out.after = pic(2400, 1600);
+  P.adj = newAdj(); applyAdj(P); out.before = pic(2400, 1600);
+  // стили на «сыром» снимке — как у человека, который только что открыл фото
+  for (const id of ['', 'warm', 'cinema', 'film', 'sunset', 'bw']) {
+    P.look = id ? { id, name: '', k: 1, a: styleById(id).a } : undefined; applyAdj(P); out['st-' + (id || 'none')] = pic(1800, 1200); }
+  P.look = undefined; P.adj = adj;
+  // эффекты на обработанном снимке: целиком — виньетка и размытие, фрагмент 1:1 — резкость и зерно
+  const fx = (k, v, rc) => { Object.assign(P.adj, { sp: 0, bl: 0, vg: 0, gr: 0, [k]: v }); applyAdj(P); return pic(900, 600, rc); };
+  const crop1 = [1560, 640, 900, 600];
+  out['fx-vg'] = fx('vg', 70); out['fx-bl'] = fx('bl', 45); out['fx-gr'] = fx('gr', 60, crop1);
+  // резкость: блики на воде, слева — без неё, справа — с ней (на мягкой картинке иначе разницы не видно)
+  const crop2 = [1620, 1330, 600, 400], sharp = new Image(), soft = new Image();
+  sharp.src = fx('sp', 100, crop2); soft.src = fx('sp', 0, crop2); await sharp.decode(); await soft.decode();
+  const sp = mk(900, 600), sx = sp.getContext('2d'); sx.drawImage(soft, 0, 0); sx.drawImage(sharp, 450, 0, 450, 600, 450, 0, 450, 600);
+  sx.fillStyle = '#fff'; sx.fillRect(449, 0, 2, 600); out['fx-sp'] = sp.toDataURL('image/jpeg', .88);
+  P.adj = adj; applyAdj(P);
+  return out;
 });
-for (const k of ['before', 'after']) { writeFileSync(`${OUT}/${k}.jpg`, Buffer.from(ba[k].split(',')[1], 'base64')); console.log('saved', k); }
+for (const [k, v] of Object.entries(pics)) { writeFileSync(`${OUT}/${k}.jpg`, Buffer.from(v.split(',')[1], 'base64')); console.log('saved', k); }
 
 ws.close(); chrome.kill(); process.exit(0);
