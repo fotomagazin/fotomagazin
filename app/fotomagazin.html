@@ -4,8 +4,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Фотомагазин</title>
-<!-- шрифты для текста (с кириллицей); без интернета будут системные -->
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Lobster&family=Montserrat:ital,wght@0,400;0,700;1,400;1,700&family=Oswald:wght@400;700&family=PT+Serif:ital,wght@0,400;0,700;1,400;1,700&family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=Roboto:ital,wght@0,400;0,700;1,400;1,700&family=Rubik:ital,wght@0,400;0,700;1,400;1,700&family=Unbounded:wght@400;700&display=swap">
 <style>
 :root{
   --bg:#0e0e11;--panel:#18181c;--raised:#222228;--input:#111114;--hover:rgba(255,255,255,.06);
@@ -295,9 +293,33 @@ input[type=range]:hover::-webkit-slider-thumb{transform:scale(1.15)}
 .exsum{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid var(--line);font-variant-numeric:tabular-nums}
 .exsum b{font-size:13px}
 .exsum span{color:var(--dim)}
+/* ---- новый холст ---- */
+.nd{width:min(560px,calc(100vw - 32px))}
+.nd-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.nd-card{height:auto;flex-direction:column;gap:6px;padding:12px 6px 10px;border-radius:12px;background:var(--raised);border:1px solid var(--line);color:var(--text)}
+.nd-card:hover{background:#2b2b33}
+.nd-card.on,.nd-card.on:hover{background:var(--accbg);border-color:var(--acc);box-shadow:0 0 0 1px var(--acc)}
+.nd-card i{display:grid;place-items:center;width:44px;height:44px}
+.nd-card i b{display:block;border:1.5px solid var(--acc2);border-radius:3px;background:rgba(106,166,255,.12)}
+.nd-card span{font-size:12px;font-weight:600;text-align:center;line-height:1.2}
+.nd-card small{font-size:10.5px;color:var(--dim);font-variant-numeric:tabular-nums}
+.nd .exr{display:grid;grid-template-columns:92px 1fr;align-items:center;gap:10px;min-height:30px}
+.nd .exr>span:first-child{color:var(--dim)}
+.nd .seg button{height:26px;padding:0 12px}
+.nd .wh{display:flex;align-items:center;gap:6px;color:var(--dim)}
+.nd .wh input{width:84px;height:28px}
+.empty .new-link{pointer-events:auto;color:var(--acc2);text-decoration:none;cursor:pointer}
+.empty .new-link:hover{text-decoration:underline}
 /* узкое окно: прячем подписи, остаются иконки */
-@media (max-width:1240px){.brand{font-size:0;margin-right:6px}#top button{padding:0 8px}#z100{display:none}#brushOpts input[type=range]{width:76px}#toolHint{font-size:11px}}
-@media (max-width:1060px){#snapBtn,#histBtn,#fbBtn{font-size:0;gap:0;width:30px;padding:0}#top .sep{margin:0 2px}}
+#top>*{flex-shrink:0}
+@media (max-width:1520px){.brand{font-size:0;margin-right:6px}#z100{display:none}}
+@media (max-width:1460px){#top{gap:2px}#snapBtn,#histBtn{font-size:0;gap:0;width:30px;padding:0}#histBtn{width:40px}.upd .vw{display:none}}
+@media (max-width:1360px){#cropSize,#cropOpts>.dim{display:none}#cAngle{width:80px}}
+@media (max-width:1240px){#top button{padding:0 8px}#brushOpts input[type=range]{width:76px}#toolHint{font-size:11px}
+  #cropSize,#cropOpts>.dim,#textOpts>.dim,#healHint{display:none}#cAngle{width:80px}
+  #snapBtn,#histBtn,#fbBtn,#newBtn,#openBtn,#expBtn{font-size:0;gap:0;width:30px;padding:0}#top .sep{margin:0 2px}}
+@media (max-width:1180px){#cLine{font-size:0;gap:0;width:30px;padding:0}#opts .lbl{display:none}}
+@media (max-width:1100px){#opts{gap:7px}#selOpts button{padding:0 6px}#cloneOpts>span:last-child{display:none}#selOpts .sep{margin:0 1px}}
 </style>
 </head>
 <body>
@@ -305,6 +327,7 @@ input[type=range]:hover::-webkit-slider-thumb{transform:scale(1.15)}
   <div id="top">
     <div class="brand"><i class="logo"></i>Фотомагазин<span class="beta" id="betaTag" title="Бета-версия: основа работает, но программа ещё развивается">Бета</span></div>
     <button id="updBtn" class="upd dd" title="Версия программы и обновления"></button>
+    <button id="newBtn" data-i="filePlus" title="Новый пустой холст: сторис, пост, обложка или свой размер">Новый</button>
     <button id="openBtn" data-i="open" title="Изображения или проект .fotomag (Ctrl+O)">Открыть</button>
     <button id="saveProj" data-i="save" class="primary" title="Сохранить проект со слоями (Ctrl+S)">Сохранить</button>
     <button id="expBtn" data-i="download" title="Сохранить картинку: JPG, PNG или WebP, нужного размера (Ctrl+Shift+S)">Экспорт</button>
@@ -332,6 +355,8 @@ input[type=range]:hover::-webkit-slider-thumb{transform:scale(1.15)}
       <span id="sizeOpts" style="display:contents"><label class="f">Размер <input type="range" id="bSize" min="1" max="1500" value="120"><input type="number" id="bSizeN" min="1" max="5000" value="120"></label>
       <label class="f">Жёсткость <input type="range" id="bHard" min="0" max="100" value="50"></label>
       <label class="f">Нажим <input type="range" id="bFlow" min="1" max="100" value="100"></label></span>
+      <span id="healOpts" style="display:none;align-items:center;gap:12px"><span class="seg"><button id="hAuto" class="on" title="Программа сама найдёт, чем заменить закрашенное">Точечная</button><button id="hSrc" title="Alt+клик — откуда брать заплатку, затем закрашивайте">С источником</button></span>
+        <span class="dim" id="healHint">Закрасьте лишнее и отпустите кнопку мыши</span></span>
       <span id="rectHint" style="color:var(--dim)">Тяните по холсту. <kbd>Shift</kbd> — квадрат</span>
       <span id="cloneOpts" style="display:none;align-items:center;gap:12px">
         <label class="f" title="Расстояние между источником и кистью сохраняется между мазками"><input type="checkbox" id="cAligned" checked> Выравнивание</label>
@@ -347,13 +372,16 @@ input[type=range]:hover::-webkit-slider-thumb{transform:scale(1.15)}
       <button id="sDel" title="Стереть выделенное на слое (Delete)">Удалить</button><button id="sFill" title="Залить цветом кисти (Alt+Delete)">Залить</button><button id="sLayer" title="Скопировать выделенное на новый слой (Ctrl+J)">В новый слой</button><button id="sMask" title="Сделать маску слоя из выделения">В маску</button><button id="sCrop" title="Кадрировать по рамке выделения">Кадрировать</button>
     </div>
     <div id="cropOpts" class="optgrp">
-      <label class="f">Пропорции <select id="cRatio"><option value="free">Любые</option><option value="orig">Как у фото</option><option value="1:1">1 : 1</option><option value="4:5">4 : 5</option><option value="3:2">3 : 2</option><option value="16:9">16 : 9</option></select></label>
+      <label class="f"><span class="lbl">Пропорции</span> <select id="cRatio"><option value="free">Любые</option><option value="orig">Как у фото</option><option value="1:1">1 : 1</option><option value="4:5">4 : 5</option><option value="3:2">3 : 2</option><option value="16:9">16 : 9</option></select></label>
       <button id="cSwap" class="icon" data-i="swap" title="Повернуть рамку: вертикальная ↔ горизонтальная"></button>
+      <div class="sep"></div>
+      <label class="f" title="Выпрямить горизонт: повернуть фото (двойной клик — сброс)"><span class="lbl">Наклон</span> <input type="range" id="cAngle" min="-45" max="45" step="0.1" value="0" style="width:110px"><input type="number" id="cAngleN" min="-45" max="45" step="0.1" value="0" style="width:56px">°</label>
+      <button id="cLine" data-i="ruler" title="Проведите линию вдоль горизонта (или вертикали) — фото выровняется по ней">По линии</button>
       <span class="seg"><button id="cSnapOn" data-i="magnet" title="Рамка липнет к краям и центру фото и не выходит за его границы. Ctrl — временно без привязки">К краям</button><button id="cSnapOff" title="Рамку можно тянуть куда угодно, даже за пределы фото (там будет прозрачный фон)">Свободно</button></span>
       <span id="cropSize" class="dim" style="min-width:110px;font-variant-numeric:tabular-nums"></span>
       <div class="sep"></div>
       <button id="cApply" class="on" title="Enter">Применить</button><button id="cReset" title="Esc">Сбросить</button>
-      <span class="dim">Тяните углы и края рамки или нарисуйте новую · <kbd>Enter</kbd> — применить</span>
+      <span class="dim"><kbd>Enter</kbd> — применить</span>
     </div>
     <div id="textOpts" class="optgrp">
       <select id="tFont" title="Шрифт"></select>
@@ -361,7 +389,10 @@ input[type=range]:hover::-webkit-slider-thumb{transform:scale(1.15)}
       <input type="color" id="tColor" value="#ffffff" title="Цвет текста">
       <span class="seg"><button id="tBold" class="icon" data-i="bold" title="Жирный"></button><button id="tItalic" class="icon" data-i="italic" title="Курсив"></button></span>
       <span class="seg"><button class="icon" data-al="left" data-i="alignL" title="По левому краю"></button><button class="icon" data-al="center" data-i="alignC" title="По центру"></button><button class="icon" data-al="right" data-i="alignR" title="По правому краю"></button></span>
-      <span class="dim">Клик — новый текст · клик по тексту — править · <kbd>Esc</kbd> — готово</span>
+      <div class="sep"></div>
+      <label class="f" title="Толщина обводки букв (0 — без обводки)">Обводка <input type="number" id="tStroke" min="0" max="25" step="1" style="width:48px"></label><input type="color" id="tStrokeC" value="#000000" title="Цвет обводки">
+      <button id="tShadow" title="Мягкая тень под текстом — читается на любом фоне">Тень</button><input type="color" id="tShadowC" value="#000000" title="Цвет тени">
+      <span class="dim">Клик — новый текст · <kbd>Esc</kbd> — готово</span>
     </div>
   </div>
   <div id="tools">
@@ -374,6 +405,7 @@ input[type=range]:hover::-webkit-slider-thumb{transform:scale(1.15)}
     <button class="tool" data-t="eraser" data-i="eraser" title="Ластик / кисть (E). X — стирать/дорисовать"></button>
     <button class="tool" data-t="brush" data-i="brush" title="Кисть (B). Alt+клик — взять цвет пипеткой"></button>
     <button class="tool" data-t="clone" data-i="stamp" title="Штамп (S): Alt+клик — откуда копировать, затем рисуйте там, куда копировать"></button>
+    <button class="tool" data-t="heal" data-i="bandage" title="Восстанавливающая кисть (J): закрасьте пятно, прыщ или провод — программа заменит его подходящим фоном"></button>
     <button class="tool" data-t="picker" data-i="pipette" title="Пипетка (I) — взять цвет с картинки"></button>
     <div class="sep"></div>
     <button class="tool" data-t="text" data-i="type" title="Текст (T)"></button>
@@ -386,6 +418,7 @@ input[type=range]:hover::-webkit-slider-thumb{transform:scale(1.15)}
       <div class="t">Перетащите сюда изображения</div>
       <div>или нажмите «Открыть» · <kbd>Ctrl</kbd>+<kbd>V</kbd> — вставить из буфера</div>
       <div>Несколько файлов сразу — каждый станет слоем · PSD, TIFF, HEIC, RAW</div>
+      <div>или <a class="new-link" href="#" id="hintNew">создайте пустой холст</a> — для сторис, поста или обложки</div>
       <div class="beta-note">Бета-версия <span class="ver"></span> · <a href="#" data-fb="idea">Расскажите, чего не хватает</a></div>
       <div id="restore" class="restore"></div></div></div>
     <button id="cmpBtn" data-i="compare" title="Удерживайте — фото до обработки (или клавиша \)"></button>
@@ -407,7 +440,7 @@ input[type=range]:hover::-webkit-slider-thumb{transform:scale(1.15)}
         <div class="styles" id="styles"></div><div id="stKRow"></div></div>
     </div>
     <div class="sec">
-      <h3><span class="ttl">Свет и цвет</span><button id="rawReset">Сбросить</button></h3>
+      <h3><span class="ttl">Свет и цвет</span><span class="hbtns"><button id="rawAuto" title="Подобрать экспозицию, контраст, тени, света и баланс цвета автоматически">Авто</button><button id="rawReset">Сбросить</button></span></h3>
       <div class="body"><div class="note">Применяется к выбранному слою. Двойной клик по ползунку или названию — сброс в ноль.</div><div id="rawProps"></div></div>
     </div>
     <div class="sec">
@@ -454,6 +487,16 @@ input[type=range]:hover::-webkit-slider-thumb{transform:scale(1.15)}
     <div class="dlg-ok"><div class="ok-ic">✓</div><b>Спасибо!</b><span>Сообщение отправлено автору.</span></div>
   </form>
 </div>
+<div id="ndModal" class="modal">
+  <div class="dlg nd">
+    <div class="dlg-h"><b>Новый холст</b><button type="button" class="icon" id="ndClose" data-i="close" title="Закрыть (Esc)"></button></div>
+    <div class="nd-grid" id="ndGrid"></div>
+    <div class="exr" id="ndCustom"><span>Размер</span><span class="wh"><input type="number" id="ndW" min="1"> × <input type="number" id="ndH" min="1"> px</span></div>
+    <div class="exr"><span>Фон</span><span class="seg" id="ndBg"><button data-bg="#ffffff">Белый</button><button data-bg="#000000">Чёрный</button><button data-bg="">Прозрачный</button><button data-bg="color">Цвет</button></span></div>
+    <div class="exr" id="ndColorRow"><span></span><input type="color" id="ndColor" value="#f2e6d8"></div>
+    <div class="dlg-f"><span class="dim" id="ndInfo"></span><button type="button" id="ndCancel">Отмена</button><button type="button" class="on" id="ndGo">Создать</button></div>
+  </div>
+</div>
 <div id="exModal" class="modal">
   <div class="dlg ex">
     <div class="dlg-h"><b>Сохранить картинку</b><button type="button" class="icon" id="exClose" data-i="close" title="Закрыть (Esc)"></button></div>
@@ -484,7 +527,7 @@ input[type=range]:hover::-webkit-slider-thumb{transform:scale(1.15)}
 const $ = s => document.querySelector(s);
 const view = $('#view'), cv = $('#c'), ctx = cv.getContext('2d'), ov = $('#o'), octx = ov.getContext('2d');
 const MAC = /Mac|iPhone|iPad/.test(navigator.platform), MOD = MAC ? '⌘' : 'Ctrl';
-const APP_BUILD = '0.2.0';   // номер этой версии — совпадает с тегом релиза на GitHub (v0.2.0)
+const APP_BUILD = '0.3.0';   // номер этой версии — совпадает с тегом релиза на GitHub (v0.3.0)
 const APP_VERSION = APP_BUILD + ' бета';
 // куда уходят отзывы из формы (сервер бота на Cloudflare)
 const FEEDBACK_API = 'https://fotomagazin-bot.fotomagazin.workers.dev/feedback';
@@ -515,8 +558,22 @@ const dirty = () => layers.length > 0 && (history[hpos - 1] || null) !== savedAt
 function markSaved() { savedAt = history[hpos - 1] || null; updateTitle(); }
 function updateTitle() { document.title = (dirty() ? '● ' : '') + (projectName || 'Фотомагазин'); }
 addEventListener('beforeunload', e => { if (dirty()) { e.preventDefault(); e.returnValue = ''; } });
-function pushH(e) { history.length = hpos; history.push(e); if (history.length > 60) history.shift(); hpos = history.length; scheduleAutosave(); refreshAll(); }
-function gotoH(k) { k = Math.max(0, Math.min(history.length, k)); while (hpos > k) history[--hpos].undo(); while (hpos < k) history[hpos++].redo(); scheduleAutosave(); refreshAll(); }
+// история держит старые картинки (для отмены) — кроме лимита в 60 шагов есть лимит по памяти:
+// на больших фото самые старые шаги забываются раньше, чтобы вкладка не упала от нехватки памяти
+const HIST_BUDGET = Math.min(1.5e9, (navigator.deviceMemory || 4) * 1.5e8);
+let histTrimTold = false;
+function pushH(e) {
+  history.length = hpos; history.push(e); if (history.length > 60) history.shift();
+  let total = history.reduce((n, h) => n + (h.bytes || 0), 0);
+  while (total > HIST_BUDGET && history.length > 5) { total -= history.shift().bytes || 0;
+    if (!histTrimTold) { histTrimTold = true; setTimeout(() => toast('Фото большое — самые старые шаги истории забыты, чтобы хватило памяти', 3500), 0); } }
+  hpos = history.length; scheduleAutosave(); refreshAll();
+}
+const canvBytes = c => c ? c.width * c.height * 4 : 0;
+// сколько памяти держит шаг истории: картинки «до», которые больше нигде не используются
+const droppedBytes = (b, a) => ['src', 'erase', 'mask', 'paint'].reduce((n, k) => n + (b[k] && b[k] !== a[k] ? canvBytes(b[k]) : 0), 0);
+const layerBytes = l => [l.src, l.erase, l.mask, l.paint, l.adjC !== l.src && l.adjC, l.final !== l.adjC && l.final, l.blur && l.blur.c].reduce((n, c) => n + canvBytes(c || null), 0);
+function gotoH(k) { if (straight) cancelStraighten(); k = Math.max(0, Math.min(history.length, k)); while (hpos > k) history[--hpos].undo(); while (hpos < k) history[hpos++].redo(); scheduleAutosave(); refreshAll(); }
 // снимок свойств слоя (канвасы — по ссылке; пиксельные правки кисти хранятся отдельно, кусками)
 const snapL = L => ({ x: L.x, y: L.y, scale: L.scale, opacity: L.opacity, visible: L.visible, adj: JSON.stringify(L.adj),
   src: L.src, erase: L.erase, mask: L.mask, paint: L.paint, color: L.color, maskOn: L.maskOn, target: L.target, w: L.w, h: L.h, rot: L.rot || 0,
@@ -525,15 +582,17 @@ const sameL = (a, b) => Object.keys(a).every(k => a[k] === b[k]);
 function setL(L, s) {
   const adjCh = JSON.stringify(L.adj) !== s.adj || (L.look && JSON.stringify(L.look)) !== s.look, srcCh = L.src !== s.src, mCh = L.erase !== s.erase || L.mask !== s.mask || L.paint !== s.paint || L.maskOn !== s.maskOn;
   Object.assign(L, s, { adj: JSON.parse(s.adj), txt: s.txt ? JSON.parse(s.txt) : undefined, look: s.look ? JSON.parse(s.look) : undefined });
-  if (srcCh) { if (L.tex) { gl.deleteTexture(L.tex); L.tex = null; } L.final = mk(L.w, L.h); L.adjC = L.src; }
+  if (srcCh) { dropTex(L); L.final = mk(L.w, L.h); L.adjC = L.src; }
   if (adjCh || srcCh) applyAdj(L); else if (mCh) refreshFinal(L);
   thumb(L);
 }
 function commit(name, L, before) { if (!L || !before) return; const after = snapL(L); if (sameL(before, after)) return;
-  pushH({ name: name + ' — ' + L.name, undo: () => setL(L, before), redo: () => setL(L, after) }); }
-const snapDoc = () => ({ list: layers.slice(), doc: doc && { ...doc }, pos: layers.map(l => [l, l.x, l.y]), sel });
-function setDoc(s) { layers = s.list.slice(); doc = s.doc && { ...s.doc }; s.pos.forEach(([l, x, y]) => { l.x = x; l.y = y; }); sel = Math.min(s.sel, layers.length - 1); }
-function commitDoc(name, before) { const after = snapDoc(); pushH({ name, undo: () => setDoc(before), redo: () => setDoc(after) }); }
+  pushH({ name: name + ' — ' + L.name, undo: () => setL(L, before), redo: () => setL(L, after), bytes: droppedBytes(before, after) }); }
+const snapDoc = () => ({ list: layers.slice(), doc: doc && { ...doc }, pos: layers.map(l => [l, l.x, l.y, l.rot || 0]), sel });
+function setDoc(s) { layers = s.list.slice(); doc = s.doc && { ...s.doc }; s.pos.forEach(([l, x, y, r]) => { l.x = x; l.y = y; l.rot = r || 0; }); sel = Math.min(s.sel, layers.length - 1); }
+function commitDoc(name, before) { const after = snapDoc();
+  const bytes = before.list.filter(l => !after.list.includes(l)).reduce((n, l) => n + layerBytes(l), 0);   // удалённые слои живут в истории
+  pushH({ name, undo: () => setDoc(before), redo: () => setDoc(after), bytes }); }
 
 function renderHistory() {
   $('#undoBtn').disabled = hpos === 0; $('#redoBtn').disabled = hpos === history.length;
@@ -561,7 +620,7 @@ const gl = glc.getContext('webgl', { premultipliedAlpha: false, preserveDrawingB
 const MAXT = gl ? Math.min(gl.getParameter(gl.MAX_TEXTURE_SIZE), 16384) : 8192;
 const GLT = 4096;   // размер куска для WebGL-обработки
 let U = {}, lutTex = null, pvTex = null;
-if (gl) {
+function initGL() {
   const sh = (type, src) => { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
     if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) console.error(gl.getShaderInfoLog(s)); return s; };
   const prog = gl.createProgram();
@@ -630,6 +689,17 @@ void main(){
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 256, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, idLUT());
   gl.activeTexture(gl.TEXTURE0); gl.uniform1i(U.C, 1);
   pvTex = tex(gl.LINEAR);   // для миниатюр стилей
+}
+if (gl) {
+  initGL();
+  // при нехватке памяти браузер может «перезапустить» видеокарту — тогда всё созданное в ней пропадает.
+  // Пока её нет, слои показываются как были; когда вернулась — заново собираем обработку всех слоёв
+  glc.addEventListener('webglcontextlost', e => e.preventDefault());
+  glc.addEventListener('webglcontextrestored', () => {
+    initGL(); texLayers.clear();
+    for (const L of layers) { L.tex = null; L.texFrom = null; applyAdj(L); thumb(L); }
+    stKey = null; scheduleStyleThumbs(); render(); toast('Видеокарта перезапустилась — обработка восстановлена', 2500);
+  });
 }
 function hueRGB(h) { const f = n => { const k = (n + h / 30) % 12; return .5 - .5 * Math.max(-1, Math.min(k - 3, 9 - k, 1)); }; return [f(0), f(8), f(4)]; }
 function chroma(z) { const c = hueRGB(z.h || 0), l = .2126 * c[0] + .7152 * c[1] + .0722 * c[2], k = (z.s || 0) / 100 * .35; return c.map(x => (x - l) * k); }
@@ -719,7 +789,18 @@ function blurredSrc(L, bl) {
 }
 
 // итог слоя = коррекция × ластик × маска (пересчёт только в области r)
+// если у слоя нет ластика, маски и мазков, его итог — это сама картинка после коррекции:
+// отдельную полноразмерную копию не держим (на фото 24 Мп это ~100 МБ памяти на слой)
+const plainL = L => !L.paint && !L.erase && !(L.mask && L.maskOn);
 function refreshFinal(L, r = [0, 0, L.w, L.h]) {
+  if (plainL(L)) {
+    if (L.final !== L.adjC) L.final = L.adjC;   // экранная копия пересоберётся сама (она привязана к L.final)
+    else { const P = L.px; if (P && P.src === L.final) { const [x, y, w, h] = r, c = P.c.getContext('2d'), lv = P.lv;   // картинка поменялась на месте
+      c.imageSmoothingQuality = 'medium'; c.clearRect(x * lv, y * lv, Math.ceil(w * lv), Math.ceil(h * lv)); c.drawImage(L.final, x, y, w, h, x * lv, y * lv, w * lv, h * lv); } }
+    return;
+  }
+  if (!L.final || L.final === L.adjC || L.final === L.src || (L.blur && L.final === L.blur.c) || L.final.width !== L.w || L.final.height !== L.h) {
+    L.final = mk(L.w, L.h); r = [0, 0, L.w, L.h]; }   // появился ластик/маска/мазки — теперь нужна своя копия, собираем целиком
   const A = 64, ax0 = Math.floor(r[0] / A) * A, ay0 = Math.floor(r[1] / A) * A;   // выравнивание по сетке — без швов в экранной копии
   const x = Math.max(0, ax0), y = Math.max(0, ay0), w = Math.min(L.w, Math.ceil((r[0] + r[2]) / A) * A) - x, h = Math.min(L.h, Math.ceil((r[1] + r[3]) / A) * A) - y;
   if (w <= 0 || h <= 0) return;
@@ -762,16 +843,21 @@ function proxyFor(L, need) {
   return L.px.c;
 }
 const scratch = mk(1, 1), scratchC = scratch.getContext('2d');
+// копия слоя в видеопамяти нужна только выбранному слою (для быстрых ползунков) — у остальных освобождаем
+const texLayers = new Set();
+function dropTex(L) { if (L.tex) { gl.deleteTexture(L.tex); L.tex = null; } texLayers.delete(L); }
+function trimTextures() { for (const L of [...texLayers]) if (L !== cur()) dropTex(L); }
 function applyAdj(L) {
   const P = adjParams(L.adj, L.look);
   if (!P.v.bl) L.blur = null;   // размытие выключили — копию не держим в памяти
   const base = P.v.bl ? blurredSrc(L, P.v.bl) : L.src;
   if (!P.shader || !gl) { L.adjC = base; refreshFinal(L); return; }
+  if (gl.isContextLost()) { refreshFinal(L); return; }   // видеокарта перезапускается — оставляем прежний результат
   if (!L.tex) {
     L.tex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, L.tex);
     [gl.TEXTURE_WRAP_S, gl.TEXTURE_WRAP_T].forEach(p => gl.texParameteri(gl.TEXTURE_2D, p, gl.CLAMP_TO_EDGE));
     [gl.TEXTURE_MIN_FILTER, gl.TEXTURE_MAG_FILTER].forEach(p => gl.texParameteri(gl.TEXTURE_2D, p, gl.NEAREST));
-    L.texFrom = null;
+    L.texFrom = null; texLayers.add(L);
   }
   gl.bindTexture(gl.TEXTURE_2D, L.tex);
   if (L.texFrom !== base) { gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, base); L.texFrom = base; }
@@ -790,6 +876,7 @@ function applyAdj(L) {
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     c.clearRect(x, y, w, h); c.drawImage(glc, 0, 0, w, h, x, y, w, h);
   }
+  if (L !== cur()) dropTex(L);
   refreshFinal(L);
 }
 let adjPending = false;
@@ -980,13 +1067,13 @@ const flip = hor => layerOp(hor ? 'Отразить по горизонтали'
     if (hor) { x.translate(c.width, 0); x.scale(-1, 1); } else { x.translate(0, c.height); x.scale(1, -1); } x.drawImage(c, 0, 0);
     x.setTransform(1, 0, 0, 1, 0, 0); return n; };   // сброс: иначе холст «запоминает» зеркало и ластик рисует отражённо
   L.src = f(L.src); L.erase = f(L.erase); L.mask = f(L.mask); L.paint = f(L.paint); L.final = mk(L.w, L.h); L.adjC = L.src;
-  if (L.tex) { gl.deleteTexture(L.tex); L.tex = null; } });
+  dropTex(L); });
 $('#flipH').onclick = flip(true); $('#flipV').onclick = flip(false);
 $('#rotL').onclick = layerOp('Поворот 90°', L => {
   const r = c => { if (!c) return c; const n = mk(c.height, c.width), x = n.getContext('2d'); x.translate(n.width, 0); x.rotate(Math.PI / 2); x.drawImage(c, 0, 0); x.setTransform(1, 0, 0, 1, 0, 0); return n; };
   const cx = L.x + L.w * L.scale / 2, cy = L.y + L.h * L.scale / 2;
   L.src = r(L.src); L.erase = r(L.erase); L.mask = r(L.mask); L.paint = r(L.paint); [L.w, L.h] = [L.h, L.w]; L.final = mk(L.w, L.h); L.adjC = L.src;
-  if (L.tex) { gl.deleteTexture(L.tex); L.tex = null; }
+  dropTex(L);
   L.x = cx - L.w * L.scale / 2; L.y = cy - L.h * L.scale / 2; });
 $('#canvL').onclick = () => { const L = cur(); if (!L) return; const b = snapDoc(), cs = docCorners(L), bx = Math.min(...cs.map(c => c[0])), by = Math.min(...cs.map(c => c[1]));
   layers.forEach(l => { l.x -= bx; l.y -= by; }); doc = { w: Math.round(Math.max(...cs.map(c => c[0])) - bx), h: Math.round(Math.max(...cs.map(c => c[1])) - by) }; commitDoc('Холст по слою — ' + L.name, b); fitView(); };
@@ -1017,6 +1104,54 @@ const RP = $('#rawProps');
 .forEach(([k, name, mn = -100, mx = 100, st = 1, cls]) =>
   row(RP, name, mn, mx, st, () => cur() ? cur().adj[k] : 0, v => { if (cur()) { cur().adj[k] = v; scheduleAdj(); } }, 0, cls));
 $('#rawReset').onclick = layerOp('Сброс: свет и цвет', L => Object.assign(L.adj, { ex: 0, co: 0, hi: 0, sh: 0, vi: 0, sa: 0, ti: 0, te: 0 }));
+
+// «Авто»: смотрим на снимок и подбираем ползунки. Тон считается копией формул шейдера на уменьшенной выборке пикселей:
+// средняя яркость — к норме, но света не выбиваются сильнее, чем было; тени не проваливаются;
+// баланс белого — только по почти серым участкам (закат или синий час не «исправляем» в серость)
+function autoAdj(L) {
+  const k = Math.min(1, 220 / Math.max(L.w, L.h)), w = Math.max(1, Math.round(L.w * k)), h = Math.max(1, Math.round(L.h * k));
+  const c = mk(w, h), x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(L.src, 0, 0, w, h);
+  const d = x.getImageData(0, 0, w, h).data, px = [];
+  for (let i = 0; i < d.length; i += 4) if (d[i + 3] > 200) px.push([d[i] / 255, d[i + 1] / 255, d[i + 2] / 255]);
+  if (px.length < 100) return null;
+  const lum = ([r, g, b]) => .2126 * r + .7152 * g + .0722 * b;
+  // баланс белого: по почти нейтральным пикселям средних тонов; если таких мало — цвет не трогаем
+  let R = 0, G = 0, B = 0, n = 0;
+  for (const p of px) { const l = lum(p); if (l > .15 && l < .9 && Math.max(...p) - Math.min(...p) < .1) { R += p[0]; G += p[1]; B += p[2]; n++; } }
+  let te = 0, ti = 0;
+  if (n > px.length * .05) { R /= n; G /= n; B /= n; const m = (R + B) / 2;
+    te = clampN((B - R) / (.18 * R + .22 * B) * 50, -25, 25); ti = clampN((G - m) / (.25 * G + .15 * m) * 50, -15, 15);
+    if (Math.abs(te) < 4) te = 0; if (Math.abs(ti) < 4) ti = 0; }
+  // копия формул шейдера (температура, оттенок, экспозиция, контраст, тени/света) — только яркость
+  const Kt = .25, toLin = v => v <= .04045 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4), toS = v => (v = Math.max(v, 0)) <= .0031308 ? v * 12.92 : 1.055 * Math.pow(v, 1 / 2.4) - .055;
+  const sm = (a, b, v) => { const t = clampN((v - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+  const tone = (p, a) => {
+    let r = p[0] * (1 + a.te * .18), g = p[1] * (1 + a.te * .04), b = p[2] * (1 - a.te * .22);
+    r *= 1 + a.ti * .15; g *= 1 - a.ti * .25; b *= 1 + a.ti * .15;
+    if (a.ex) [r, g, b] = [r, g, b].map(v => { const q = clampN(toLin(v), 0, 1), E = Kt * q / (1 + Kt - q) * Math.pow(2, a.ex); return toS(Math.min(E * (1 + Kt) / (E + Kt), 1)); });
+    const f = 1 + a.co * (a.co > 0 ? 1 : .8); let l = clampN(lum([(r - .5) * f + .5, (g - .5) * f + .5, (b - .5) * f + .5].map(v => clampN(v, 0, 1))), 0, 1);
+    const dd = a.sh * (1 - sm(0, .55, l)) * .6 + a.hi * sm(.45, 1, l) * .6; return clampN(l + dd * (dd > 0 ? 1 - l : l), 0, 1);
+  };
+  const step = Math.max(1, Math.floor(px.length / 3500)), S = px.filter((_, i) => i % step === 0);
+  const stats = a => { const v = S.map(p => tone(p, a)).sort((p, q) => p - q), q = f => v[Math.min(v.length - 1, Math.floor(f * v.length))];
+    return { med: q(.5), lo: q(.02), hi: q(.98), p10: q(.1), p90: q(.9), clipW: v.filter(t => t > .985).length / v.length, clipB: v.filter(t => t < .01).length / v.length }; };
+  const A = { te: te / 100, ti: ti / 100, ex: 0, co: 0, hi: 0, sh: 0 };
+  const best = (key, vals, cost) => { let b = A[key], bc = Infinity; for (const v of vals) { A[key] = v; const c2 = cost(stats(A)); if (c2 < bc - 1e-4) { bc = c2; b = v; } } A[key] = b; };
+  const rng = (a, b, st) => { const r = []; for (let v = a; v <= b + 1e-9; v += st) r.push(Math.round(v * 100) / 100); return r; };
+  const b0 = stats(A), more = (v, v0) => Math.max(0, v - v0 - .002);   // «стало выбито / провалено сильнее, чем было»
+  // яркость: средние тона — к норме (с запасом: нормальный снимок почти не трогаем), но без новых выбитых светов
+  best('ex', rng(-2, 3, .05), t => Math.max(0, Math.abs(t.med - .42) - .05) + more(t.clipW, b0.clipW) * 40 + Math.max(0, t.hi - .97) * 4 + Math.abs(A.ex) * .012);
+  best('co', rng(-.2, .3, .02), t => Math.abs(t.hi - t.lo - .82) * .6 + (more(t.clipW, b0.clipW) + more(t.clipB, b0.clipB)) * 40 + Math.abs(A.co) * .3);   // размах тонов
+  best('sh', rng(0, .4, .02), t => Math.max(0, .06 - t.p10) * 4 + A.sh * .12);                                      // тени не проваливаются
+  best('hi', rng(-.4, 0, .02), t => Math.max(0, t.p90 - .88) * 4 - A.hi * .12);                                     // света не выбиваются
+  const sat = S.reduce((n2, p) => n2 + Math.max(...p) - Math.min(...p), 0) / S.length;   // чуть красочности, если снимок не серый
+  return { te: Math.round(te), ti: Math.round(ti), ex: Math.round(A.ex * 100) / 100, co: Math.round(A.co * 100), hi: Math.round(A.hi * 100), sh: Math.round(A.sh * 100),
+    vi: sat > .06 ? 10 : 0, sa: 0 };
+}
+$('#rawAuto').onclick = () => { const L = cur(); if (!L) return toast('Сначала откройте изображение');
+  const a = autoAdj(L); if (!a) return toast('На этом слое почти нечего анализировать — он прозрачный');
+  layerOp('Авто: свет и цвет', L2 => Object.assign(L2.adj, a))();
+  toast('Подобрано автоматически — подправьте ползунками, если хочется', 2500); };
 
 // Детали и эффекты
 const FX = $('#fxProps');
@@ -1110,7 +1245,7 @@ function demoScene(w, h) {   // маленький закат в горах — 
   hill('#1d2340', [[0, .74], [.12, .7], [.12, 1]]); return c;
 }
 function styleThumbs() {
-  const box = $('#styles'); if (!gl || box.closest('.sec').classList.contains('collapsed')) return;
+  const box = $('#styles'); if (!gl || gl.isContextLost() || box.closest('.sec').classList.contains('collapsed')) return;
   const L = cur(), key = L ? srcId(L.src) + JSON.stringify(L.adj) + '|' + userStyles.length : 'demo' + userStyles.length;
   if (key === stKey) return; stKey = key;
   const W = 168, H = 120, base = L ? (() => { const c = mk(W, H), x = c.getContext('2d'), k = Math.max(W / L.w, H / L.h);   // кадр «по центру»
@@ -1226,7 +1361,7 @@ const wheelSync = [];
 });
 $('#gradeReset').onclick = layerOp('Сброс цветокоррекции', L => { L.adj.g = newAdj().g; });
 function updateProps() { syncers.forEach(f => f()); wheelSync.forEach(f => f()); updateMaskUI(); updateRectUI(); updateSelUI(); updateTextUI(); updateStyleUI(); drawCurves(); paintRanges(); }
-function refreshAll() { updateLayersUI(); updateProps(); renderHistory(); render(); updateImgBtn(); updateTitle(); }
+function refreshAll() { if (gl) trimTextures(); updateLayersUI(); updateProps(); renderHistory(); render(); updateImgBtn(); updateTitle(); }
 
 // ---------- размер изображения (меню «Размер ▾») ----------
 const MAXDOC = 16384;
@@ -1267,14 +1402,15 @@ function resizeImage(nw, nh) {
       const w = Math.max(1, Math.min(MAXT, Math.round(dispW(L) * kx))), h = Math.max(1, Math.min(MAXT, Math.round(dispH(L) * ky)));
       const rs = c => { if (!c) return c; const n = mk(w, h), x = n.getContext('2d'); x.imageSmoothingQuality = 'high'; x.drawImage(c, 0, 0, w, h); return n; };
       L.src = rs(L.src); L.erase = rs(L.erase); L.mask = rs(L.mask); L.paint = rs(L.paint); L.w = w; L.h = h; L.scale = 1; L.ar = 1;
-      L.final = mk(w, h); L.adjC = L.src; if (L.tex) { gl.deleteTexture(L.tex); L.tex = null; } applyAdj(L); thumb(L);
+      L.final = mk(w, h); L.adjC = L.src; dropTex(L); applyAdj(L); thumb(L);
     }
     L.x = cx * kx - dispW(L) / 2; L.y = cy * ky - dispH(L) / 2;
   }
   const old = doc.w + '×' + doc.h; doc = { w: nw, h: nh }; setSelection([]);
   const after = { d: snapDoc(), ls: layers.map(l => [l, snapL(l)]) };
   const put = st => { setDoc(st.d); st.ls.forEach(([l, s]) => setL(l, s)); centerView(); };
-  pushH({ name: `Размер изображения ${old} → ${nw}×${nh}`, undo: () => put(before), redo: () => put(after) });
+  pushH({ name: `Размер изображения ${old} → ${nw}×${nh}`, undo: () => put(before), redo: () => put(after),
+    bytes: before.ls.reduce((n, [l, b], i) => n + droppedBytes(b, after.ls[i][1]), 0) });
   centerView(); toast(`Размер изображения: ${nw} × ${nh} px (масштаб просмотра ${Math.round(zoom * 100)}%)`, 2500);
 }
 
@@ -1378,6 +1514,18 @@ function drawOverlay() {
   if (tool === 'clone' && mouse.inside && !spaceDown && !altDown) {
     ctx.beginPath(); ctx.arc(mouse.x, mouse.y, Math.max(1, brush.size / 2 * zoom), 0, 7); ctx.strokeStyle = '#000'; ctx.lineWidth = 3; ctx.stroke(); ctx.strokeStyle = '#fff'; ctx.lineWidth = 1; ctx.stroke();
   }
+  if (tool === 'heal') {
+    if (drag && drag.t === 'heal') {   // след мазка, пока кнопка зажата
+      ctx.save(); ctx.lineCap = ctx.lineJoin = 'round'; ctx.lineWidth = Math.max(1, brush.size * zoom); ctx.strokeStyle = 'rgba(255,255,255,.42)'; ctx.beginPath();
+      drag.pts.forEach((q, i) => { const X = q.x * zoom + panX, Y = q.y * zoom + panY; i ? ctx.lineTo(X, Y) : ctx.moveTo(X, Y); });
+      if (drag.pts.length === 1) ctx.lineTo(drag.pts[0].x * zoom + panX + .01, drag.pts[0].y * zoom + panY); ctx.stroke(); ctx.restore(); }
+    if (healMode === 'src' && healSrc) {   // откуда берётся заплатка
+      const o = drag && drag.t === 'heal' && drag.off, X = o ? mouse.x + o.x * zoom : healSrc.x * zoom + panX, Y = o ? mouse.y + o.y * zoom : healSrc.y * zoom + panY;
+      ctx.beginPath(); ctx.moveTo(X - 8, Y); ctx.lineTo(X + 8, Y); ctx.moveTo(X, Y - 8); ctx.lineTo(X, Y + 8);
+      ctx.strokeStyle = '#000'; ctx.lineWidth = 3; ctx.stroke(); ctx.strokeStyle = '#30d158'; ctx.lineWidth = 1; ctx.stroke(); }
+    if (mouse.inside && !spaceDown && !(altDown && healMode === 'src')) { ctx.beginPath(); ctx.arc(mouse.x, mouse.y, Math.max(1, brush.size / 2 * zoom), 0, 7);
+      ctx.strokeStyle = '#000'; ctx.lineWidth = 3; ctx.stroke(); ctx.strokeStyle = '#fff'; ctx.lineWidth = 1; ctx.stroke(); }
+  }
   if (tool === 'brush' && mouse.inside && !spaceDown && !altDown) {
     const r = Math.max(1, brush.size / 2 * zoom);
     ctx.beginPath(); ctx.arc(mouse.x, mouse.y, r, 0, 7); ctx.strokeStyle = '#000'; ctx.lineWidth = 3; ctx.stroke(); ctx.strokeStyle = '#fff'; ctx.lineWidth = 1; ctx.stroke();
@@ -1442,7 +1590,7 @@ function bakeRect(L, w, h) {
   const src = mk(w, h), sc = src.getContext('2d'); sc.fillStyle = L.color; sc.fillRect(0, 0, w, h);
   L.src = src; L.erase = rs(L.erase); L.mask = rs(L.mask); L.paint = rs(L.paint);
   L.w = w; L.h = h; L.scale = 1; L.ar = 1; L.final = mk(w, h); L.adjC = src;
-  if (L.tex) { gl.deleteTexture(L.tex); L.tex = null; }
+  dropTex(L);
   applyAdj(L); thumb(L);
 }
 // окно ещё не показано (нулевой размер) — масштаб не уходит в минус
@@ -1486,6 +1634,7 @@ cv.onpointerdown = e => {
   if (e.button === 0 && tool === 'select') {   // Shift — добавить к выделению, Alt — вычесть
     drag = { t: 'sel', mode: selMode, op: e.shiftKey ? 'add' : e.altKey ? 'sub' : 'new', x0: p.x, y0: p.y, x1: p.x, y1: p.y, pts: [[p.x, p.y]] }; renderOverlay(); return;
   }
+  if (e.button === 0 && tool === 'crop' && cropLine) { drag = { t: 'cropline', x0: p.x, y0: p.y, x1: p.x, y1: p.y }; renderOverlay(); return; }
   if (e.button === 0 && tool === 'crop') {
     if (!crop) resetCrop(); const hd = cropHit(p);
     const on = cropSnapOn(e); guides = [];
@@ -1511,21 +1660,28 @@ cv.onpointerdown = e => {
     else drag = { t: 'move', before, sx: p.x, sy: p.y, lx: L.x, ly: L.y };
   } else if (tool === 'eraser') {
     if (!L.visible) { toast('Слой скрыт'); return; } rasterize(L);
-    const tc = L.mask && L.target === 'mask' ? L.mask : (L.erase ||= whiteCanvas(L.w, L.h));   // ластик — по первому мазку
-    drag = { t: 'brush', L, restore: brush.restore !== e.altKey, last: p, pts: [p], first: true, tc, tiles: new Map(), selL: hasSel() ? selMaskLayer(L) : null };
+    const toMask = !!(L.mask && L.target === 'mask'), created = !toMask && !L.erase;
+    const tc = toMask ? L.mask : (L.erase ||= whiteCanvas(L.w, L.h));   // ластик — по первому мазку
+    drag = { t: 'brush', L, restore: brush.restore !== e.altKey, last: p, pts: [p], first: true, tc, created, tiles: new Map(), selL: hasSel() ? selMaskLayer(L) : null };
   } else if (tool === 'clone') {
     if (e.altKey) { cloneSrc = { x: p.x, y: p.y }; cloneOffset = null; toast('Источник выбран — теперь рисуйте там, куда копировать', 2000); renderOverlay(); return; }
     if (!cloneSrc) { toast('Сначала Alt+клик по месту, откуда копировать'); return; }
-    if (!L.visible) { toast('Слой скрыт'); return; } rasterize(L);
+    if (!L.visible) { toast('Слой скрыт'); return; } rasterize(L); retouchable(L);
     if (!cloneOffset || !$('#cAligned').checked) cloneOffset = { x: p.x - cloneSrc.x, y: p.y - cloneSrc.y };
-    if (!L.paint) L.paint = mk(L.w, L.h);
-    drag = { t: 'brush', L, paint: true, clone: true, S: cloneSource(L, cloneOffset), last: p, pts: [p], first: true, tc: L.paint, tiles: new Map(), selL: hasSel() ? selMaskLayer(L) : null };
+    // «Текущий слой» — правим сам снимок (под светом и цветом), «Все слои» — копируем видимое поверх, как кистью
+    const toSrc = $('#cSample').value !== 'all', created = !toSrc && !L.paint; if (created) L.paint = mk(L.w, L.h);
+    drag = { t: 'brush', L, paint: true, clone: true, created, tc: toSrc ? L.src : L.paint, S: cloneSource(L, cloneOffset), last: p, pts: [p], first: true, tiles: new Map(), selL: hasSel() ? selMaskLayer(L) : null };
+  } else if (tool === 'heal') {
+    if (healMode === 'src' && e.altKey) { healSrc = { x: p.x, y: p.y }; toast('Источник выбран — закрашивайте то, что нужно заменить', 2000); renderOverlay(); return; }
+    if (healMode === 'src' && !healSrc) { toast('Сначала Alt+клик по месту, откуда брать заплатку'); return; }
+    if (!L.visible) { toast('Слой скрыт'); return; } rasterize(L); retouchable(L);
+    drag = { t: 'heal', L, pts: [p], off: healMode === 'src' ? { x: healSrc.x - p.x, y: healSrc.y - p.y } : null };
   } else if (tool === 'picker' || (tool === 'brush' && e.altKey)) {
     pickColor(p); drag = { t: 'pick' };
   } else if (tool === 'brush') {
     if (!L.visible) { toast('Слой скрыт'); return; } rasterize(L);
-    if (!L.paint) L.paint = mk(L.w, L.h);
-    drag = { t: 'brush', L, paint: true, color: brush.color, last: p, pts: [p], first: true, tc: L.paint, tiles: new Map(), selL: hasSel() ? selMaskLayer(L) : null };
+    const created = !L.paint; if (created) L.paint = mk(L.w, L.h);
+    drag = { t: 'brush', L, paint: true, color: brush.color, created, last: p, pts: [p], first: true, tc: L.paint, tiles: new Map(), selL: hasSel() ? selMaskLayer(L) : null };
   }
   render();
 };
@@ -1575,6 +1731,7 @@ cv.onpointermove = e => {
       if (e.shiftKey && drag.op !== 'add') { const s = Math.max(Math.abs(p.x - drag.x0), Math.abs(p.y - drag.y0));   // Shift после начала — квадрат/круг
         drag.x1 = drag.x0 + Math.sign(p.x - drag.x0 || 1) * s; drag.y1 = drag.y0 + Math.sign(p.y - drag.y0 || 1) * s; } }
     renderOverlay(); return; }
+  else if (drag.t === 'cropline') { drag.x1 = p.x; drag.y1 = p.y; renderOverlay(); return; }
   else if (drag.t === 'crop') { const r = cropRatio(), on = cropSnapOn(e), hd = drag.hd;
     let c = r && hd.mx && hd.my ? snapRatioCorner(cropResize(drag.b, hd, p.x, p.y, r), hd, r, on)
       : cropResize(drag.b, hd, hd.mx ? snapC(p.x, 'x', on) : p.x, hd.my ? snapC(p.y, 'y', on) : p.y, r);
@@ -1593,6 +1750,7 @@ cv.onpointermove = e => {
     if (r) c = snapRatioCorner(c, hd, r, on);
     crop = cropSnap ? clampCrop(c, r, hd) : c; updateCropUI(); renderOverlay(); return; }
   else if (drag.t === 'pick') pickColor(p);
+  else if (drag.t === 'heal') { const q = drag.pts[drag.pts.length - 1]; if (Math.hypot(p.x - q.x, p.y - q.y) * zoom > 2) drag.pts.push(p); renderOverlay(); return; }
   else if (drag.t === 'brush') drag.pts.push(p);   // рисуем не на каждое событие мыши, а раз в кадр
   render();
 };
@@ -1600,6 +1758,8 @@ cv.onpointerup = () => {
   const L = cur(), d = drag; if (d && d.t === 'brush') flushStroke(); drag = null; guides = [];
   if (d && d.t === 'newrect') { createRect(d); return; }
   if (d && d.t === 'sel') { finishSel(d); return; }
+  if (d && d.t === 'cropline') { finishCropLine(d); return; }
+  if (d && d.t === 'heal') { healStroke(d); return; }
   if (d && d.t.startsWith('crop')) { renderOverlay(); return; }
   if (!d || !L) return;
   if (d.t === 'move') commit('Перемещение', L, d.before);
@@ -1645,7 +1805,7 @@ function cloneSource(L, o) {
   x.translate(L.w / 2, L.h / 2); x.scale(1 / L.scale, 1 / sy); x.rotate(-(L.rot || 0) * RAD); x.translate(-cx, -cy);
   x.translate(o.x, o.y);   // сдвиг: берём пиксели из точки-источника
   if ($('#cSample').value === 'all') x.drawImage(compositeCanvas(layers.filter(l => l.visible)), 0, 0);
-  else { x.globalAlpha = 1; drawLayer(x, L, L.final, 1); }
+  else { x.globalAlpha = 1; drawLayer(x, L, L.src, 1); }   // из исходника: заплатка потом обрабатывается вместе со всем снимком
   x.setTransform(1, 0, 0, 1, 0, 0);
   return S;
 }
@@ -1687,12 +1847,143 @@ function flushStroke() {
     const t = d.tc.getContext('2d'); t.globalCompositeOperation = op; t.drawImage(selTmp, 0, 0, cw, ch, ox, oy, cw, ch); t.globalCompositeOperation = 'source-over';
   }
   d.last = d.pts[d.pts.length - 1]; d.pts = [];
-  refreshFinal(L, [bx0, by0, bx1 - bx0, by1 - by0]);
+  if (d.tc === L.src) srcChanged(L, [bx0, by0, bx1 - bx0, by1 - by0]); else refreshFinal(L, [bx0, by0, bx1 - bx0, by1 - by0]);
 }
 function finishStroke(L, d) {
   const tc = d.tc;
+  if (tc === L.src) { srcChanged(L, [0, 0, L.w, L.h], true); return pushTiles(L, d, 'src', 'Штамп — ' + L.name); }
   pushTiles(L, d, d.paint ? 'paint' : tc === L.mask ? 'mask' : 'erase', (d.clone ? 'Штамп' : d.paint ? 'Кисть' : d.restore ? 'Дорисовать' : 'Стереть') + (tc === L.mask ? ' (маска)' : '') + ' — ' + L.name);
 }
+// ---------- ретушь пишется прямо в исходник слоя (под свет и цвет, стили, кривые, эффекты) ----------
+// Тогда любая коррекция после ретуши ложится на заплатки так же, как на весь снимок, и они не «проступают».
+// Чтобы штамп не тормозил на больших фото, обработка пересчитывается только в изменённом месте
+function retouchable(L) {   // прямоугольник при правке пикселей становится обычным слоем (иначе при смене размера правка пропадёт)
+  if (L.kind !== 'rect') return; const b = snapL(L); L.kind = undefined; commit('Прямоугольник → обычный слой', L, b); }
+function srcChanged(L, r, done) {
+  histCache.delete(L.src); beforeCache.delete(L); stKey = null;
+  const P = adjParams(L.adj, L.look);
+  if (P.v.bl) { if (done) { L.blur = null; applyAdj(L); thumb(L); } return; }   // с размытием — пересчёт целиком, в конце мазка
+  if (!P.shader || !gl) { refreshFinal(L, r); return; }                          // без обработки итог и есть исходник
+  if (gl.isContextLost()) return;
+  if (!L.tex || L.texFrom !== L.src || L.adjC === L.src) { applyAdj(L); return; }
+  const pad = 2;   // резкость смотрит на соседей — захватываем чуть шире
+  const x = Math.max(0, Math.floor(r[0]) - pad), y = Math.max(0, Math.floor(r[1]) - pad);
+  const w = Math.min(L.w, Math.ceil(r[0] + r[2]) + pad) - x, h = Math.min(L.h, Math.ceil(r[1] + r[3]) + pad) - y;
+  if (w <= 0 || h <= 0) return;
+  const sub = mk(w, h); sub.getContext('2d').drawImage(L.src, x, y, w, h, 0, 0, w, h);
+  gl.bindTexture(gl.TEXTURE_2D, L.tex); gl.texSubImage2D(gl.TEXTURE_2D, 0, x, y, gl.RGBA, gl.UNSIGNED_BYTE, sub);
+  const tw = Math.min(L.w, GLT), th = Math.min(L.h, GLT);
+  if (glc.width !== tw || glc.height !== th) { glc.width = tw; glc.height = th; }
+  const TW = gl.drawingBufferWidth, TH = gl.drawingBufferHeight, c = L.adjC.getContext('2d');
+  glSet(P, L.w, L.h);
+  for (let yy = y; yy < y + h; yy += TH) for (let xx = x; xx < x + w; xx += TW) {
+    const cw = Math.min(TW, x + w - xx), ch = Math.min(TH, y + h - yy);
+    gl.viewport(0, TH - ch, cw, ch); gl.uniform4f(U.R, xx / L.w, yy / L.h, cw / L.w, ch / L.h); gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    c.clearRect(xx, yy, cw, ch); c.drawImage(glc, 0, 0, cw, ch, xx, yy, cw, ch);
+  }
+  refreshFinal(L, [x, y, w, h]);
+}
+function srcRegionsChanged(L, rs) {   // отмена/повтор ретуши
+  if (adjParams(L.adj, L.look).v.bl) return srcChanged(L, [0, 0, L.w, L.h], true);
+  rs.forEach(r => srcChanged(L, r));
+}
+// ---------- восстанавливающая кисть ----------
+// Закрашенное место заменяется «заплаткой» из похожего участка (точечная — участок ищется сам по краям мазка,
+// «с источником» — откуда показали), а разница цвета и яркости по краям плавно растекается внутрь (pull-push) — шва не видно
+let healMode = 'auto', healSrc = null;
+$('#hAuto').onclick = () => { healMode = 'auto'; $('#hAuto').classList.add('on'); $('#hSrc').classList.remove('on'); $('#healHint').textContent = 'Закрасьте лишнее и отпустите кнопку мыши'; renderOverlay(); };
+$('#hSrc').onclick = () => { healMode = 'src'; $('#hSrc').classList.add('on'); $('#hAuto').classList.remove('on'); $('#healHint').textContent = 'Alt+клик — откуда брать, затем закрашивайте'; renderOverlay(); };
+function pullPush(v, w, W, H) {   // v — 3 канала, w — вес (1 известно, 0 нет): неизвестное заполняется плавно из известного
+  const lv = [{ v, w, W, H }];
+  while (lv[lv.length - 1].W > 1 || lv[lv.length - 1].H > 1) {
+    const p = lv[lv.length - 1], W2 = Math.ceil(p.W / 2), H2 = Math.ceil(p.H / 2), v2 = new Float32Array(W2 * H2 * 3), w2 = new Float32Array(W2 * H2);
+    for (let y = 0; y < p.H; y++) for (let x = 0; x < p.W; x++) { const k = y * p.W + x, ww = p.w[k]; if (!ww) continue;
+      const q = (y >> 1) * W2 + (x >> 1); w2[q] += ww; v2[q * 3] += ww * p.v[k * 3]; v2[q * 3 + 1] += ww * p.v[k * 3 + 1]; v2[q * 3 + 2] += ww * p.v[k * 3 + 2]; }
+    for (let q = 0; q < W2 * H2; q++) if (w2[q] > 0) { v2[q * 3] /= w2[q]; v2[q * 3 + 1] /= w2[q]; v2[q * 3 + 2] /= w2[q]; w2[q] = Math.min(1, w2[q]); }
+    lv.push({ v: v2, w: w2, W: W2, H: H2 });
+  }
+  for (let l = lv.length - 2; l >= 0; l--) {
+    const p = lv[l], c = lv[l + 1];
+    for (let y = 0; y < p.H; y++) {
+      const fy = clampN((y + .5) / 2 - .5, 0, c.H - 1), yi = Math.floor(fy), yj = Math.min(c.H - 1, yi + 1), ty = fy - yi;
+      for (let x = 0; x < p.W; x++) { const k = y * p.W + x, ww = p.w[k]; if (ww >= 1) continue;
+        const fx = clampN((x + .5) / 2 - .5, 0, c.W - 1), xi = Math.floor(fx), xj = Math.min(c.W - 1, xi + 1), tx = fx - xi;
+        for (let ch = 0; ch < 3; ch++) {
+          const a = c.v[(yi * c.W + xi) * 3 + ch], b = c.v[(yi * c.W + xj) * 3 + ch], cc = c.v[(yj * c.W + xi) * 3 + ch], dd = c.v[(yj * c.W + xj) * 3 + ch];
+          const val = (a + (b - a) * tx) * (1 - ty) + (cc + (dd - cc) * tx) * ty; p.v[k * 3 + ch] = ww * p.v[k * 3 + ch] + (1 - ww) * val; } }
+    }
+  }
+}
+function healStroke(d) {
+  const L = d.L, rr = Math.max(1.5, brush.size / 2 / L.scale), pts = d.pts.map(q => toLocal(L, q.x, q.y));
+  let bx0 = Infinity, by0 = Infinity, bx1 = -Infinity, by1 = -Infinity;
+  for (const [x, y] of pts) { bx0 = Math.min(bx0, x - rr); by0 = Math.min(by0, y - rr); bx1 = Math.max(bx1, x + rr); by1 = Math.max(by1, y + rr); }
+  const pad = Math.ceil(Math.max(4, rr * .5));   // поле вокруг мазка: по нему подгоняется цвет
+  const x0 = Math.max(0, Math.floor(bx0) - pad), y0 = Math.max(0, Math.floor(by0) - pad), x1 = Math.min(L.w, Math.ceil(bx1) + pad), y1 = Math.min(L.h, Math.ceil(by1) + pad);
+  const W = x1 - x0, H = y1 - y0; if (W < 3 || H < 3) return render();
+  if (W * H > 9e6) { toast('Слишком большой мазок — восстанавливайте по частям'); return render(); }
+  // маска мазка с мягким краем (жёсткость кисти — насколько мягкий)
+  const mc = mk(W, H), mx = mc.getContext('2d', { willReadFrequently: true }), soft = Math.max(.6, rr * (1 - brush.hard) * .25);
+  if (CAN_FILTER) mx.filter = `blur(${soft}px)`;
+  mx.strokeStyle = '#fff'; mx.lineCap = mx.lineJoin = 'round'; mx.lineWidth = Math.max(1, 2 * rr - soft); mx.beginPath();
+  pts.forEach(([x, y], i) => i ? mx.lineTo(x - x0, y - y0) : mx.moveTo(x - x0, y - y0)); if (pts.length === 1) mx.lineTo(pts[0][0] - x0 + .01, pts[0][1] - y0);
+  mx.stroke(); mx.filter = 'none';
+  if (hasSel()) { mx.globalCompositeOperation = 'destination-in'; mx.drawImage(selMaskLayer(L), x0, y0, W, H, 0, 0, W, H); }
+  const md = mx.getImageData(0, 0, W, H).data, M = new Float32Array(W * H); let any = false;
+  for (let i = 0; i < M.length; i++) { M[i] = md[i * 4 + 3] / 255 * brush.flow; if (M[i] > .004) any = true; }
+  if (!any) return render();
+  // сдвиг до источника (в пикселях слоя): показанный — или ищем сами
+  let O = null;
+  if (d.off) { const a = toLocal(L, d.pts[0].x, d.pts[0].y), b = toLocal(L, d.pts[0].x + d.off.x, d.pts[0].y + d.off.y); O = [Math.round(b[0] - a[0]), Math.round(b[1] - a[1])]; }
+  const ex = d.off ? 0 : Math.round(Math.min(2048, Math.max(W, H) * 2 + rr * 8));
+  const wx0 = Math.max(0, Math.min(x0 - ex, x0 + (O ? O[0] : 0))), wy0 = Math.max(0, Math.min(y0 - ex, y0 + (O ? O[1] : 0)));
+  const wx1 = Math.min(L.w, Math.max(x1 + ex, x1 + (O ? O[0] : 0))), wy1 = Math.min(L.h, Math.max(y1 + ex, y1 + (O ? O[1] : 0))), WW = wx1 - wx0, WH = wy1 - wy0;
+  // берём сам снимок (до света и цвета): заплатка ляжет в него, а обработка потом применится ко всему одинаково
+  const wc = mk(WW, WH), wx = wc.getContext('2d', { willReadFrequently: true });
+  wx.drawImage(L.src, wx0, wy0, WW, WH, 0, 0, WW, WH);
+  const I = wx.getImageData(0, 0, WW, WH).data, at = (x, y) => ((y - wy0) * WW + (x - wx0)) * 4;
+  const inside = ([dx, dy]) => x0 + dx >= wx0 && y0 + dy >= wy0 && x1 + dx <= wx1 && y1 + dy <= wy1;
+  if (O && !inside(O)) { toast('Источник слишком близко к краю — выберите другое место (Alt+клик)'); return render(); }
+  if (!O) {   // точечная: ищем участок, у которого края лучше всего совпадают с краями мазка, и который сам не закрашен
+    const ring = [], inner = [], st = Math.max(1, Math.round(Math.sqrt(W * H / 2500)));
+    for (let j = 0; j < H; j += st) for (let i = 0; i < W; i += st) { const m = M[j * W + i]; if (m <= .004) ring.push(i, j); else if (m > .5) inner.push(i, j); }
+    const bw = (bx1 - bx0), bh = (by1 - by0), cand = [];
+    for (const k of [1.25, 1.8, 2.6, 3.6, 5]) for (let t = 0; t < 24; t++) { const a = t / 24 * Math.PI * 2; cand.push([Math.round(Math.cos(a) * k * 2 * rr), Math.round(Math.sin(a) * k * 2 * rr), k]); }
+    for (const k of [1.1, 1.5]) for (let t = 0; t < 16; t++) { const a = t / 16 * Math.PI * 2; cand.push([Math.round(Math.cos(a) * k * bw), Math.round(Math.sin(a) * k * bh), 1 + k]); }
+    const score = (dx, dy) => {
+      let ov = 0; for (let n = 0; n < inner.length; n += 2) { const ii = inner[n] + dx, jj = inner[n + 1] + dy; if (ii >= 0 && jj >= 0 && ii < W && jj < H && M[jj * W + ii] > .1) ov++; }
+      if (ov > inner.length / 2 * .02) return Infinity;   // заплатка не должна браться с закрашенного
+      let sc = 0; for (let n = 0; n < ring.length; n += 2) { const a = at(x0 + ring[n], y0 + ring[n + 1]), b = at(x0 + ring[n] + dx, y0 + ring[n + 1] + dy);
+        const r1 = I[a] - I[b], g1 = I[a + 1] - I[b + 1], b1 = I[a + 2] - I[b + 2]; sc += r1 * r1 + g1 * g1 + b1 * b1; }
+      return sc / (ring.length / 2 || 1);
+    };
+    // длинный мазок (провод, царапина): заплатку берём сбоку, а не вдоль — иначе вдоль линии скопируется она же
+    const sx = pts[pts.length - 1][0] - pts[0][0], sy = pts[pts.length - 1][1] - pts[0][1], elong = Math.hypot(sx, sy) > rr * 3, perp = Math.atan2(sx, -sy);
+    const across = (dx, dy) => { if (!elong) return true; const t = ((Math.atan2(dy, dx) - perp) % Math.PI + Math.PI) % Math.PI; return Math.min(t, Math.PI - t) < .87; };
+    let best = null, bs = Infinity;
+    for (const [dx, dy, k] of cand) { if (!inside([dx, dy]) || !across(dx, dy)) continue; const sc = score(dx, dy) * (1 + k * .04); if (sc < bs) { bs = sc; best = [dx, dy]; } }
+    if (!best) { toast('Рядом не нашлось подходящего места — попробуйте режим «С источником»'); return render(); }
+    for (let stp = Math.max(1, Math.round(rr * .5)); stp >= 1; stp = Math.floor(stp / 2)) {   // уточняем вокруг лучшего
+      let moved = true; while (moved) { moved = false;
+        for (const [ux, uy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]]) { const c = [best[0] + ux * stp, best[1] + uy * stp];
+          if (!inside(c) || !across(c[0], c[1])) continue; const sc = score(c[0], c[1]); if (sc < bs) { bs = sc; best = c; moved = true; } } }
+      if (stp === 1) break;
+    }
+    O = best;
+  }
+  // заплатка + плавная подгонка цвета: разница «было − заплатка» известна по краям и растекается внутрь
+  const N = W * H, diff = new Float32Array(N * 3), wt = new Float32Array(N), S = new Float32Array(N * 3);
+  for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) { const k = j * W + i, a = at(x0 + i, y0 + j), b = at(x0 + i + O[0], y0 + j + O[1]);
+    for (let c = 0; c < 3; c++) { S[k * 3 + c] = I[b + c]; diff[k * 3 + c] = I[a + c] - I[b + c]; } wt[k] = M[k] <= .004 ? 1 : 0; }
+  pullPush(diff, wt, W, H);
+  const out = new Uint8ClampedArray(N * 4);
+  for (let k = 0; k < N; k++) { for (let c = 0; c < 3; c++) out[k * 4 + c] = S[k * 3 + c] + diff[k * 3 + c]; out[k * 4 + 3] = Math.round(M[k] * 255); }
+  // запись в сам снимок (под обработку), с отменой кусками — как у кисти
+  const td = { tc: L.src, tiles: new Map() }; backupTiles(L, td, x0, y0, x1, y1);
+  const oc = mk(W, H); oc.getContext('2d').putImageData(new ImageData(out, W, H), 0, 0); L.src.getContext('2d').drawImage(oc, x0, y0);
+  srcChanged(L, [x0, y0, W, H], true); pushTiles(L, td, 'src', 'Восстановление — ' + L.name); render();
+}
+
 // пипетка: берёт видимый цвет (все слои вместе) в точке
 function pickColor(p) {
   const c = mk(1, 1), x = c.getContext('2d', { willReadFrequently: true });
@@ -1718,22 +2009,24 @@ $('#mErase').onclick = () => setMode(false); $('#mPaint').onclick = () => setMod
 function setTool(t) {
   if (tool === 'crop' && t !== 'crop' && crop && doc && (Math.round(crop.x) || Math.round(crop.y) || Math.round(crop.w) !== doc.w || Math.round(crop.h) !== doc.h)) toast('Кадрирование не применено', 1500);
   if (t !== 'text') endTextEdit(); else preloadFonts();
+  if (tool === 'crop' && t !== 'crop') { if (straight) toast('Выпрямление не применено', 1500); cancelStraighten(); cropLine = false; $('#cLine').classList.remove('on'); }
   tool = t; document.querySelectorAll('.tool').forEach(b => b.classList.toggle('on', b.dataset.t === t));
   $('#selOpts').style.display = t === 'select' ? 'flex' : 'none'; $('#cropOpts').style.display = t === 'crop' ? 'flex' : 'none'; $('#textOpts').style.display = t === 'text' ? 'flex' : 'none';
   crop = null; if (t === 'crop') resetCrop(); if (t === 'text') updateTextUI();
-  $('#brushOpts').style.display = ['eraser', 'brush', 'picker', 'clone'].includes(t) ? 'flex' : 'none';
-  $('#cloneOpts').style.display = t === 'clone' ? 'flex' : 'none';
+  $('#brushOpts').style.display = ['eraser', 'brush', 'picker', 'clone', 'heal'].includes(t) ? 'flex' : 'none';
+  $('#cloneOpts').style.display = t === 'clone' ? 'flex' : 'none'; $('#healOpts').style.display = t === 'heal' ? 'flex' : 'none';
   if (t === 'rect') $('#brushOpts').style.display = 'flex';
-  $('#modeBtns').style.display = t === 'eraser' ? '' : 'none'; $('#bColor').style.display = t === 'eraser' || t === 'clone' ? 'none' : '';
+  $('#modeBtns').style.display = t === 'eraser' ? '' : 'none'; $('#bColor').style.display = t === 'eraser' || t === 'clone' || t === 'heal' ? 'none' : '';
   $('#sizeOpts').style.display = t === 'rect' ? 'none' : 'contents'; $('#rectHint').style.display = t === 'rect' ? '' : 'none';
   $('#toolHint').textContent = TOOL_HINT[t] || ''; $('#toolName').textContent = TOOL_NAME[t]; render(); }
-const TOOL_NAME = { select: 'Выделение', crop: 'Кадрирование', text: 'Текст', move: 'Перемещение', hand: 'Рука', eraser: 'Ластик', brush: 'Кисть', clone: 'Штамп', picker: 'Пипетка', rect: 'Прямоугольник' };
+const TOOL_NAME = { heal: 'Восстановление', select: 'Выделение', crop: 'Кадрирование', text: 'Текст', move: 'Перемещение', hand: 'Рука', eraser: 'Ластик', brush: 'Кисть', clone: 'Штамп', picker: 'Пипетка', rect: 'Прямоугольник' };
 const TOOL_HINT = { move: `Тяните слой. Углы — масштаб, чуть снаружи угла — поворот (Shift — шаг 15°). ${MOD} — без привязки`,
-  hand: 'Тяните, чтобы сдвинуть вид. Колесо мыши или щипок на тачпаде — масштаб, два пальца на тачпаде — сдвиг' };
+  heal: '', hand: 'Тяните, чтобы сдвинуть вид. Колесо мыши или щипок на тачпаде — масштаб, два пальца на тачпаде — сдвиг' };
 document.querySelectorAll('.tool').forEach(b => b.onclick = () => setTool(b.dataset.t));
 addEventListener('keydown', e => {
   altDown = e.altKey; if (e.key === 'Alt') { e.preventDefault(); renderOverlay(); }
-  if (e.key === 'Escape') { $('#hist').style.display = $('#imgMenu').style.display = $('#fbMenu').style.display = $('#updMenu').style.display = 'none'; closeFb(); closeExport(); }
+  if (e.key === 'Escape') { $('#hist').style.display = $('#imgMenu').style.display = $('#fbMenu').style.display = $('#updMenu').style.display = 'none'; closeFb(); closeExport(); closeNew(); }
+  if ($('#ndModal').classList.contains('open')) { if (e.key === 'Enter' && !e.target.matches('input[type=number]')) { e.preventDefault(); $('#ndGo').click(); } return; }
   if ($('#exModal').classList.contains('open')) { if (e.key === 'Enter' && !e.target.matches('select')) { e.preventDefault(); doExport(); } return; }
   if (e.target.matches('input[type=number],input[type=text],select,textarea')) return;
   const k = e.key.toLowerCase(), c = e.ctrlKey || e.metaKey;
@@ -1772,6 +2065,7 @@ addEventListener('keydown', e => {
   else if (e.code === 'KeyU') setTool('rect');
   else if (e.code === 'KeyS') setTool('clone');
   else if (e.code === 'KeyH') setTool('hand');
+  else if (e.code === 'KeyJ') setTool('heal');
   else if (e.code === 'KeyX') setMode(!brush.restore);
   else if (e.code === 'BracketLeft') setSize(brush.size / 1.2);
   else if (e.code === 'BracketRight') setSize(brush.size * 1.2 + 1);
@@ -1845,9 +2139,13 @@ function pushTiles(L, d, prop, name) {
   if (!d.tiles.size) return;
   const tc = d.tc, parts = [...d.tiles.values()];
   parts.forEach(p => { p.after = mk(p.w, p.h); p.after.getContext('2d').drawImage(tc, p.x, p.y, p.w, p.h, 0, 0, p.w, p.h); });
-  const put = key => { L[prop] = tc; const c = tc.getContext('2d');
-    parts.forEach(p => { c.clearRect(p.x, p.y, p.w, p.h); c.drawImage(p[key], p.x, p.y); refreshFinal(L, [p.x, p.y, p.w, p.h]); }); thumb(L); };
-  thumb(L); pushH({ name, undo: () => put('before'), redo: () => put('after') });
+  // отменили первый мазок на слое — служебный холст (ластика/мазков) не нужен, освобождаем память
+  const put = key => { if (key === 'before' && d.created) { L[prop] = null; refreshFinal(L); thumb(L); return; }
+    L[prop] = tc; const c = tc.getContext('2d');
+    parts.forEach(p => { c.clearRect(p.x, p.y, p.w, p.h); c.drawImage(p[key], p.x, p.y); if (prop !== 'src') refreshFinal(L, [p.x, p.y, p.w, p.h]); });
+    if (prop === 'src') srcRegionsChanged(L, parts.map(p => [p.x, p.y, p.w, p.h]));
+    thumb(L); };
+  thumb(L); pushH({ name, undo: () => put('before'), redo: () => put('after'), bytes: parts.reduce((n, p) => n + 8 * p.w * p.h, 0) });
 }
 function selLayerEdit(op) {   // 'delete' — стереть выделенное, 'fill' — залить цветом кисти
   const L = cur(); if (!L || !hasSel()) return; if (!L.visible) return toast('Слой скрыт');
@@ -1932,7 +2230,45 @@ function fitCropRatio() {   // вписать нужную пропорцию в
   const r = cropRatio(); if (!crop || !r) return; let { x, y, w, h } = crop; const cx = x + w / 2, cy = y + h / 2;
   if (w / h > r) w = h * r; else h = w / r; crop = { x: cx - w / 2, y: cy - h / 2, w, h };
 }
-function resetCrop() { crop = doc ? { x: 0, y: 0, w: doc.w, h: doc.h } : null; fitCropRatio(); updateCropUI(); renderOverlay(); }
+function resetCrop() { cancelStraighten(); crop = doc ? { x: 0, y: 0, w: doc.w, h: doc.h } : null; fitCropRatio(); updateCropUI(); renderOverlay(); }
+// ---------- выпрямить горизонт: все слои поворачиваются вокруг центра холста (без потери качества — меняется только угол),
+// рамка сама сужается так, чтобы в кадр не попали пустые углы. В историю попадает одним шагом вместе с кадрированием
+let straight = null, cropLine = false;   // straight: { a — угол, base — слои до поворота }
+function syncAngleUI(a) { $('#cAngle').value = a; $('#cAngleN').value = a; paintRange($('#cAngle')); }
+function setStraighten(a) {
+  if (!doc) return; a = Math.round(clampN(+a || 0, -45, 45) * 10) / 10;
+  if (!straight) { if (!a) return syncAngleUI(0); straight = { a: 0, base: layers.map(l => [l, l.x, l.y, l.rot || 0]) }; }
+  const cx = doc.w / 2, cy = doc.h / 2; straight.a = a;
+  for (const [l, x, y, r] of straight.base) {
+    const w = dispW(l), h = dispH(l), [dx, dy] = rotV(x + w / 2 - cx, y + h / 2 - cy, a);
+    l.x = cx + dx - w / 2; l.y = cy + dy - h / 2; l.rot = (r + a + 540) % 360 - 180;
+  }
+  if (!a) cancelStraighten(); else fitStraightCrop();
+  syncAngleUI(a); render();
+}
+function cancelStraighten() {
+  if (!straight) return; straight.base.forEach(([l, x, y, r]) => { l.x = x; l.y = y; l.rot = r; }); straight = null;
+  syncAngleUI(0); if (tool === 'crop' && doc) { crop = { x: 0, y: 0, w: doc.w, h: doc.h }; fitCropRatio(); updateCropUI(); } render();
+}
+function fitStraightCrop() {   // самая большая рамка нужной пропорции внутри повёрнутого фото, по центру
+  const a = straight.a * RAD, c = Math.abs(Math.cos(a)), s = Math.abs(Math.sin(a)), r = cropRatio() || doc.w / doc.h;
+  const h = Math.max(1, Math.min(doc.w / (r * c + s), doc.h / (r * s + c)) - 2), w = h * r;
+  crop = { x: (doc.w - w) / 2, y: (doc.h - h) / 2, w, h }; updateCropUI(); renderOverlay();
+}
+function finishCropLine(d) {   // линия вдоль горизонта → угол, на который нужно довернуть
+  const dx = d.x1 - d.x0, dy = d.y1 - d.y0; cropLine = false; $('#cLine').classList.remove('on');
+  if (Math.hypot(dx, dy) * zoom < 12) return renderOverlay();
+  let ang = Math.atan2(dy, dx) / RAD; if (ang > 90) ang -= 180; if (ang <= -90) ang += 180;
+  if (Math.abs(ang) > 45) ang += ang > 0 ? -90 : 90;   // почти вертикальная линия — выравниваем по вертикали
+  setStraighten((straight ? straight.a : 0) - ang);
+  toast(`Выровнено: наклон ${(straight ? straight.a : 0).toLocaleString('ru')}° · Enter — применить`, 2500);
+}
+$('#cAngle').oninput = e => setStraighten(e.target.value);
+$('#cAngle').ondblclick = () => setStraighten(0);
+$('#cAngleN').onchange = e => setStraighten(e.target.value);
+$('#cAngleN').onkeydown = e => { if (e.key === 'Enter') e.target.blur(); };
+$('#cLine').onclick = () => { if (!doc) return; cropLine = !cropLine; $('#cLine').classList.toggle('on', cropLine);
+  if (cropLine) toast('Проведите линию вдоль горизонта — фото выровняется по ней', 2500); };
 function updateCropUI() { $('#cropSize').textContent = crop ? `${Math.round(crop.w)} × ${Math.round(crop.h)} px` : ''; }
 function cropHandles() {
   const x0 = crop.x * zoom + panX, y0 = crop.y * zoom + panY, x1 = x0 + crop.w * zoom, y1 = y0 + crop.h * zoom, xm = (x0 + x1) / 2, ym = (y0 + y1) / 2;
@@ -1959,17 +2295,22 @@ function applyCrop(r) {
   if (w < 1 || h < 1) return;
   if (w > MAXDOC || h > MAXDOC) return toast('Максимум ' + MAXDOC + ' px по каждой стороне');
   if (!x && !y && w === doc.w && h === doc.h) return toast('Рамка совпадает с холстом — потяните её края', 2000);
-  const b = snapDoc(); layers.forEach(l => { l.x -= x; l.y -= y; }); doc = { w, h };
-  // выделение остаётся на том же месте картинки
-  selShapes = selShapes.map(s => s.type === 'inv' ? s : s.type === 'lasso' ? { ...s, pts: s.pts.map(([a, c]) => [a - x, c - y]) } : { ...s, x: s.x - x, y: s.y - y });
-  commitDoc(`Кадрировать ${w}×${h}`, b); if (tool === 'crop') resetCrop(); fitView();
+  const ang = straight ? straight.a : 0;   // выпрямляли — «до» берём из положения слоёв до поворота
+  const b = straight ? { list: layers.slice(), doc: { ...doc }, pos: straight.base.map(q => q.slice()), sel } : snapDoc();
+  straight = null; syncAngleUI(0); layers.forEach(l => { l.x -= x; l.y -= y; }); doc = { w, h };
+  // выделение остаётся на том же месте картинки (после поворота — снимается)
+  selShapes = ang ? [] : selShapes.map(s => s.type === 'inv' ? s : s.type === 'lasso' ? { ...s, pts: s.pts.map(([a, c]) => [a - x, c - y]) } : { ...s, x: s.x - x, y: s.y - y });
+  commitDoc(ang ? `Выпрямить ${ang.toLocaleString('ru')}° и кадрировать ${w}×${h}` : `Кадрировать ${w}×${h}`, b); if (tool === 'crop') resetCrop(); fitView();
 }
 function drawCrop(c) {
   const x = crop.x * zoom + panX, y = crop.y * zoom + panY, w = crop.w * zoom, h = crop.h * zoom;
   c.save(); c.fillStyle = 'rgba(0,0,0,.55)'; c.beginPath(); c.rect(0, 0, view.clientWidth, view.clientHeight); c.rect(x, y, w, h); c.fill('evenodd');
   c.strokeStyle = 'rgba(255,255,255,.35)'; c.lineWidth = 1; c.beginPath();   // сетка «правило третей»
   for (const k of [1 / 3, 2 / 3]) { c.moveTo(x + w * k, y); c.lineTo(x + w * k, y + h); c.moveTo(x, y + h * k); c.lineTo(x + w, y + h * k); }
-  c.stroke(); c.strokeStyle = '#fff'; c.strokeRect(x + .5, y + .5, w, h);
+  c.stroke();
+  if (straight || cropLine) { c.strokeStyle = 'rgba(255,255,255,.16)'; c.beginPath();   // частая сетка — сверять горизонт
+    for (let i = 1; i < 12; i++) { if (i % 4) { c.moveTo(x + w * i / 12, y); c.lineTo(x + w * i / 12, y + h); c.moveTo(x, y + h * i / 12); c.lineTo(x + w, y + h * i / 12); } } c.stroke(); }
+  c.strokeStyle = '#fff'; c.strokeRect(x + .5, y + .5, w, h);
   c.fillStyle = '#fff'; c.strokeStyle = 'rgba(0,0,0,.5)';
   cropHandles().forEach(hd => { c.fillRect(hd.x - 4, hd.y - 4, 8, 8); c.strokeRect(hd.x - 4.5, hd.y - 4.5, 9, 9); });
   const t = `${Math.round(crop.w)} × ${Math.round(crop.h)}`; c.font = '500 12px -apple-system, system-ui, sans-serif';
@@ -1977,11 +2318,11 @@ function drawCrop(c) {
   c.fillStyle = 'rgba(20,20,24,.85)'; c.beginPath(); c.roundRect(tx, ty, tw, 22, 11); c.fill();
   c.fillStyle = '#fff'; c.fillText(t, tx + 8, ty + 15); c.restore();
 }
-$('#cRatio').onchange = () => { fitCropRatio(); updateCropUI(); renderOverlay(); };
+$('#cRatio').onchange = () => { if (straight) fitStraightCrop(); else { fitCropRatio(); updateCropUI(); renderOverlay(); } };
 $('#cSwap').onclick = () => { cropSwap = !cropSwap;
   if (!cropRatio() && crop) { const cx = crop.x + crop.w / 2, cy = crop.y + crop.h / 2; crop = { x: cx - crop.h / 2, y: cy - crop.w / 2, w: crop.h, h: crop.w }; }
   else if (crop) { const cx = crop.x + crop.w / 2, cy = crop.y + crop.h / 2, s = Math.max(crop.w, crop.h); crop = { x: cx - s / 2, y: cy - s / 2, w: s, h: s }; fitCropRatio(); }
-  updateCropUI(); renderOverlay(); };
+  if (straight) fitStraightCrop(); updateCropUI(); renderOverlay(); };
 $('#cApply').onclick = () => applyCrop(crop); $('#cReset').onclick = resetCrop;
 // режим «К краям»: рамка липнет к краям/центру фото и краям слоёв и не выходит за фото; «Свободно» — без ограничений
 let cropSnap = true; try { cropSnap = localStorage['fm-crop-snap'] !== '0'; } catch (e) {}
@@ -2042,8 +2383,10 @@ const FONTS = { 'Montserrat': 0, 'Roboto': 0, 'Rubik': 0, 'Oswald': 0, 'Unbounde
   'Courier': '"Courier New", monospace', 'Impact': 'Impact, sans-serif' };
 const fontFamily = n => FONTS[n] || `"${n}", sans-serif`;
 const fontCss = (t, px = t.size) => `${t.italic ? 'italic ' : ''}${t.bold ? 700 : 400} ${px}px ${fontFamily(t.font)}`;
-const textPad = t => Math.ceil(t.size * .3);
-const textOpt = { font: 'Montserrat', size: 0, color: '#ffffff', bold: false, italic: false, align: 'left', lh: 1.2 };
+// обводка (sw — толщина в процентах от размера шрифта, sc — цвет) и тень (sh — вкл, shc — цвет): поля текста растут под них
+const strokePx = t => (t.sw || 0) / 100 * t.size, shadowGeo = t => ({ blur: t.size * .09, dx: t.size * .04, dy: t.size * .06 });
+const textPad = t => Math.ceil(t.size * .3 + strokePx(t) + (t.sh ? t.size * .18 : 0));
+const textOpt = { font: 'Montserrat', size: 0, color: '#ffffff', bold: false, italic: false, align: 'left', lh: 1.2, sw: 0, sc: '#000000', sh: false, shc: '#000000' };
 const defTextSize = () => doc ? Math.max(12, Math.round(Math.min(doc.w, doc.h) / 12)) : 100;
 const curText = () => { const L = cur(); return L && L.kind === 'text' ? L.txt : textOpt; };
 const measC = mk(1, 1).getContext('2d'), ta = $('#txtEdit');
@@ -2060,25 +2403,46 @@ function bakeText(L, anchor) {
   measC.font = fontCss(t);
   const tw = Math.max(1, ...lines.map(s => measC.measureText(s).width)), w = Math.ceil(tw + 2 * P), h = Math.ceil(lines.length * lh + 2 * P);
   const ax = t.align === 'center' ? w / 2 : t.align === 'right' ? w - P : P;
-  const src = mk(w, h), x = src.getContext('2d');
-  x.font = fontCss(t); x.fillStyle = t.color; x.textBaseline = 'middle'; x.textAlign = t.align;
-  lines.forEach((s, i) => x.fillText(s, ax, P + i * lh + lh / 2));
+  const src = mk(w, h), draw = x => {
+    x.font = fontCss(t); x.fillStyle = t.color; x.textBaseline = 'middle'; x.textAlign = t.align;
+    const sw = strokePx(t);
+    if (sw > 0) { x.strokeStyle = t.sc || '#000'; x.lineWidth = sw * 2; x.lineJoin = 'round'; x.miterLimit = 2;   // обводка снаружи: рисуется под буквами
+      lines.forEach((s, i) => x.strokeText(s, ax, P + i * lh + lh / 2)); }
+    lines.forEach((s, i) => x.fillText(s, ax, P + i * lh + lh / 2));
+  };
+  if (t.sh) {   // тень от букв вместе с обводкой: сначала текст на черновик, потом черновик с тенью
+    const tmp = mk(w, h); draw(tmp.getContext('2d')); const x = src.getContext('2d'), g = shadowGeo(t), c = t.shc || '#000000';
+    const n = parseInt(c.slice(1), 16); x.shadowColor = `rgba(${n >> 16},${n >> 8 & 255},${n & 255},.6)`; x.shadowBlur = g.blur; x.shadowOffsetX = g.dx; x.shadowOffsetY = g.dy;
+    x.drawImage(tmp, 0, 0);
+  } else draw(src.getContext('2d'));
   const rs = c => { if (!c) return c; const n = mk(w, h); n.getContext('2d').drawImage(c, 0, 0, w, h); return n; };
   L.src = src; L.mask = rs(L.mask); L.erase = null; L.paint = null; L.w = w; L.h = h; L.scale = 1; L.ar = 1; L.tA = [ax, P, t.align];
-  L.final = mk(w, h); L.adjC = src; if (L.tex) { gl.deleteTexture(L.tex); L.tex = null; }
+  L.final = mk(w, h); L.adjC = src; dropTex(L);
   const [dx, dy] = rotV(ax - w / 2, P - h / 2, L.rot || 0); L.x = A[0] - dx - w / 2; L.y = A[1] - dy - h / 2;
   applyAdj(L); thumb(L); loadFontFor(L);
 }
 // шрифты из интернета догружаются в фоне; когда пришли — текст перерисовывается
 const fontTried = new Set();
 function loadFontFor(L) {
+  if (FONTS[L.txt.font] === 0) ensureFontCSS();
   const f = fontCss(L.txt, 40); if (fontTried.has(f) || document.fonts.check(f, (L.txt.s || '') + 'Ая')) return;
   fontTried.add(f);
   document.fonts.load(f, (L.txt.s || '') + 'AaАя').then(() => { if (L.kind === 'text') { bakeText(L); if (textEdit && textEdit.L === L) placeTextEdit(); render(); } }).catch(() => {});
 }
 let fontsPreloaded = false;
-function preloadFonts() { if (fontsPreloaded) return; fontsPreloaded = true;
+function preloadFonts() { if (fontsPreloaded) return; fontsPreloaded = true; ensureFontCSS();
   for (const n in FONTS) if (!FONTS[n]) for (const w of [400, 700]) document.fonts.load(`${w} 40px "${n}"`, 'AaАя').catch(() => {}); }
+// шрифты с кириллицей (Google Fonts) подключаются только когда нужен текст: запуск не ждёт интернета и Google.
+// Когда описание шрифтов пришло — тексты перерисовываются уже нужным шрифтом
+const FONT_CSS = 'https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Lobster&family=Montserrat:ital,wght@0,400;0,700;1,400;1,700&family=Oswald:wght@400;700&family=PT+Serif:ital,wght@0,400;0,700;1,400;1,700&family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=Roboto:ital,wght@0,400;0,700;1,400;1,700&family=Rubik:ital,wght@0,400;0,700;1,400;1,700&family=Unbounded:wght@400;700&display=swap';
+let fontCSS = null;
+function ensureFontCSS() {
+  if (fontCSS) return; fontCSS = document.createElement('link'); fontCSS.rel = 'stylesheet'; fontCSS.href = FONT_CSS;
+  fontCSS.onload = () => { fontTried.clear(); for (const L of layers) if (L.kind === 'text') loadFontFor(L);
+    if (fontsPreloaded) { fontsPreloaded = false; preloadFonts(); } };
+  fontCSS.onerror = () => { fontCSS.remove(); fontCSS = null; };   // нет интернета — попробуем в следующий раз
+  document.head.append(fontCSS);
+}
 function hitText(p) {
   for (let i = layers.length - 1; i >= 0; i--) { const L = layers[i]; if (L.kind !== 'text' || !L.visible) continue;
     const [lx, ly] = toLocal(L, p.x, p.y); if (lx >= 0 && ly >= 0 && lx <= L.w && ly <= L.h) return L; }
@@ -2113,7 +2477,8 @@ function createText(p) {
   const b = snapDoc(), i = sel, size = textOpt.size || defTextSize();
   const L = insertAbove(addLayer(mk(1, 1), 'Текст', { x: p.x, y: p.y, scale: 1 }), i);
   L.kind = 'text'; L.autoName = true;
-  L.txt = { s: '', font: textOpt.font, size, color: textOpt.color, bold: textOpt.bold, italic: textOpt.italic, align: textOpt.align, lh: textOpt.lh };
+  L.txt = { s: '', font: textOpt.font, size, color: textOpt.color, bold: textOpt.bold, italic: textOpt.italic, align: textOpt.align, lh: textOpt.lh,
+    sw: textOpt.sw, sc: textOpt.sc, sh: textOpt.sh, shc: textOpt.shc };
   bakeText(L, [p.x, p.y - size * L.txt.lh / 2]); refreshAll(); startTextEdit(L, true, b);
 }
 ta.oninput = () => { if (!textEdit) return; const L = textEdit.L; L.txt.s = ta.value; bakeText(L); placeTextEdit(); render(); };
@@ -2134,6 +2499,7 @@ function textSet(key, val, label) {
 function updateTextUI() {
   const t = curText(); $('#tFont').value = t.font; $('#tSize').value = Math.round((t.size || defTextSize()) * 10) / 10; $('#tColor').value = t.color;
   $('#tBold').classList.toggle('on', !!t.bold); $('#tItalic').classList.toggle('on', !!t.italic);
+  $('#tStroke').value = t.sw || 0; $('#tStrokeC').value = t.sc || '#000000'; $('#tShadow').classList.toggle('on', !!t.sh); $('#tShadowC').value = t.shc || '#000000';
   document.querySelectorAll('[data-al]').forEach(b => b.classList.toggle('on', b.dataset.al === t.align));
 }
 for (const n in FONTS) { const o = new Option(n, n); o.style.fontFamily = fontFamily(n); $('#tFont').append(o); }
@@ -2148,6 +2514,17 @@ $('#tColor').oninput = e => { textOpt.color = e.target.value; const L = cur(); i
   L.txt.color = e.target.value; bakeText(L); if (textEdit) placeTextEdit(); render(); };
 $('#tColor').onchange = () => { const L = cur(); if (tColorBefore && L) commit('Цвет текста', L, tColorBefore); tColorBefore = null;
   if (textEdit) setTimeout(() => ta.focus(), 0); };
+$('#tStroke').onchange = e => textSet('sw', Math.max(0, Math.min(25, Math.round(+e.target.value || 0))), 'Обводка текста');
+$('#tShadow').onclick = () => textSet('sh', !curText().sh, 'Тень текста');
+// цвета обводки и тени — живой предпросмотр, в историю — одним шагом
+const liveTextColor = (id, key, label) => { let before = null;
+  $(id).oninput = e => { textOpt[key] = e.target.value; const L = cur(); if (!L || L.kind !== 'text') return;
+    if (!before && !(textEdit && textEdit.L === L)) before = snapL(L);
+    if (key === 'sc' && !L.txt.sw) L.txt.sw = textOpt.sw = 6;      // выбрали цвет обводки — значит, обводка нужна
+    if (key === 'shc') L.txt.sh = textOpt.sh = true;
+    L.txt[key] = e.target.value; bakeText(L); if (textEdit) placeTextEdit(); updateTextUI(); render(); };
+  $(id).onchange = () => { const L = cur(); if (before && L) commit(label, L, before); before = null; if (textEdit) setTimeout(() => ta.focus(), 0); }; };
+liveTextColor('#tStrokeC', 'sc', 'Цвет обводки'); liveTextColor('#tShadowC', 'shc', 'Цвет тени');
 cv.ondblclick = e => { if (tool !== 'move') return; const h = hitText(pos(e)); if (!h) return;   // двойной клик по тексту — править
   sel = layers.indexOf(h); setTool('text'); refreshAll(); startTextEdit(h, false); };
 
@@ -2155,8 +2532,10 @@ cv.ondblclick = e => { if (tool !== 'move') return; const h = hitText(pos(e)); i
 function cursorFor(p, L) {
   if (spaceDown || tool === 'hand') return 'grab';
   if (tool === 'eraser' || tool === 'brush' || tool === 'clone') return altDown && tool !== 'eraser' ? 'crosshair' : 'none';
+  if (tool === 'heal') return altDown && healMode === 'src' ? 'crosshair' : 'none';
   if (tool === 'picker' || tool === 'rect' || tool === 'select') return 'crosshair';
   if (tool === 'text') return 'text';
+  if (tool === 'crop' && cropLine) return 'crosshair';
   if (tool === 'crop') { const hd = cropHit(p);
     if (hd) return hd.mx && hd.my ? (hd.mx === hd.my ? 'nwse-resize' : 'nesw-resize') : hd.mx ? 'ew-resize' : 'ns-resize';
     return inCrop(p) ? 'move' : 'crosshair'; }
@@ -2165,6 +2544,15 @@ function cursorFor(p, L) {
 }
 function drawExtras(c) {
   if (tool === 'crop' && crop) drawCrop(c);
+  if (drag && drag.t === 'cropline') {   // линия «по горизонту»
+    const X = v => v * zoom + panX, Y = v => v * zoom + panY, a = Math.atan2(drag.y1 - drag.y0, drag.x1 - drag.x0) / RAD;
+    c.save(); c.lineWidth = 3; c.strokeStyle = 'rgba(0,0,0,.5)'; c.beginPath(); c.moveTo(X(drag.x0), Y(drag.y0)); c.lineTo(X(drag.x1), Y(drag.y1)); c.stroke();
+    c.lineWidth = 1.5; c.strokeStyle = '#ffd60a'; c.stroke();
+    [[drag.x0, drag.y0], [drag.x1, drag.y1]].forEach(([px, py]) => { c.beginPath(); c.arc(X(px), Y(py), 4, 0, 7); c.fillStyle = '#ffd60a'; c.fill(); });
+    const t = (Math.round(a * 10) / 10).toLocaleString('ru') + '°'; c.font = '600 12px -apple-system, system-ui, sans-serif';
+    c.fillStyle = 'rgba(20,20,24,.85)'; c.beginPath(); c.roundRect(X(drag.x1) + 10, Y(drag.y1) - 11, c.measureText(t).width + 14, 22, 11); c.fill();
+    c.fillStyle = '#fff'; c.fillText(t, X(drag.x1) + 17, Y(drag.y1) + 4); c.restore();
+  }
   if (hasSel()) drawAnts(c, selShapes);
   if (drag && drag.t === 'sel') drawAnts(c, [liveSel(drag)]);
 }
@@ -2213,16 +2601,18 @@ async function offerRestore() {   // при запуске: есть незак�
 }
 
 // ---------- открытие файлов (все форматы) ----------
-const CDN = {
-  pako: 'https://cdn.jsdelivr.net/npm/pako@2.2.0/dist/pako.min.js',
-  utif: 'https://cdn.jsdelivr.net/npm/utif@3.1.0/UTIF.js',
-  heic: 'https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js',
-  psd:  'https://cdn.jsdelivr.net/npm/ag-psd@31.0.2/dist/bundle.js'
-};
+// декодеры редких форматов скачиваются при первой встрече с таким файлом; если jsdelivr недоступен — берём с unpkg
+const CDN = Object.fromEntries(Object.entries({ pako: 'pako@2.2.0/dist/pako.min.js', utif: 'utif@3.1.0/UTIF.js',
+  heic: 'heic2any@0.0.4/dist/heic2any.min.js', psd: 'ag-psd@31.0.2/dist/bundle.js' })
+  .map(([k, f]) => [k, ['https://cdn.jsdelivr.net/npm/' + f, 'https://unpkg.com/' + f]]));
 const RAW = new Set('cr2 cr3 crw nef nrw arw srf sr2 dng raf orf rw2 rwl pef ptx srw x3f 3fr fff iiq erf kdc dcr mos mrw mef raw'.split(' '));
 const scripts = {};
-function loadScript(u) { return scripts[u] ??= new Promise((ok, no) => { const s = document.createElement('script'); s.src = u; s.onload = ok;
-  s.onerror = () => { delete scripts[u]; no(Error('для этого формата нужен интернет (загрузка декодера)')); }; document.head.append(s); }); }
+function loadScript(urls) { const key = urls[0];
+  return scripts[key] ??= (async () => {
+    for (const u of urls) { try { await new Promise((ok, no) => { const sc = document.createElement('script'); sc.src = u; sc.onload = ok;
+      sc.onerror = () => { sc.remove(); no(); }; document.head.append(sc); }); return; } catch (e) {} }
+    delete scripts[key]; throw Error('для этого формата нужен интернет (загрузка декодера)');
+  })(); }
 async function viaImg(f) { const img = new Image(), u = URL.createObjectURL(f); img.src = u; try { await img.decode(); } finally { setTimeout(() => URL.revokeObjectURL(u), 1000); }
   if (!img.naturalWidth) throw Error(); return img; }
 async function readTiff(f) {
@@ -2296,6 +2686,46 @@ addEventListener('paste', async e => {
   }
   openFiles(files.map(f => new File([f], 'Вставка.' + (f.type.split('/')[1] || 'png'), { type: f.type })));
 });
+
+// ---------- новый холст: шаблоны для соцсетей, видео и печати ----------
+const ND_PRESETS = [['story', 'Сторис / Reels', 1080, 1920], ['post', 'Пост 4 : 5', 1080, 1350], ['square', 'Квадрат', 1080, 1080], ['yt', 'Обложка YouTube', 1280, 720],
+  ['fhd', 'Full HD', 1920, 1080], ['4k', '4K', 3840, 2160], ['a4', 'A4 для печати', 2480, 3508], ['custom', 'Свой размер', 0, 0]];
+const ND = { p: 'story', bg: '#ffffff', w: 1920, h: 1080 };
+try { Object.assign(ND, JSON.parse(localStorage['fm-new'] || '{}')); } catch (e) {}
+$('#ndGrid').innerHTML = ND_PRESETS.map(([id, name, w, h]) => { const k = w ? 40 / Math.max(w, h) : 0;
+  return `<button class="nd-card" data-p="${id}"><i>${w ? `<b style="width:${Math.round(w * k)}px;height:${Math.round(h * k)}px"></b>` : `<b style="width:30px;height:22px;border-style:dashed"></b>`}</i><span>${name}</span><small>${w ? w + ' × ' + h : 'ширина × высота'}</small></button>`; }).join('');
+function ndSize() { const z = ND_PRESETS.find(x => x[0] === ND.p); return z && z[2] ? [z[2], z[3]] : [ND.w, ND.h]; }
+function syncND() {
+  document.querySelectorAll('#ndGrid .nd-card').forEach(b => b.classList.toggle('on', b.dataset.p === ND.p));
+  $('#ndCustom').style.display = ND.p === 'custom' ? '' : 'none'; $('#ndW').value = ND.w; $('#ndH').value = ND.h;
+  const isCol = ND.bg !== '' && !['#ffffff', '#000000'].includes(ND.bg);
+  $('#ndBg').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.bg === 'color' ? isCol : b.dataset.bg === ND.bg));
+  $('#ndColorRow').style.display = isCol ? '' : 'none'; if (isCol) $('#ndColor').value = ND.bg;
+  const [w, h] = ndSize(); $('#ndInfo').textContent = `${w} × ${h} px`;
+  try { localStorage['fm-new'] = JSON.stringify(ND); } catch (e) {}
+}
+function openNew() { endTextEdit(); syncND(); $('#ndModal').classList.add('open'); setTimeout(() => $('#ndGo').focus(), 0); }
+function closeNew() { $('#ndModal').classList.remove('open'); }
+$('#ndGrid').onclick = e => { const b = e.target.closest('.nd-card'); if (b) { ND.p = b.dataset.p; syncND(); } };
+$('#ndGrid').ondblclick = e => { if (e.target.closest('.nd-card')) $('#ndGo').click(); };
+$('#ndBg').onclick = e => { const b = e.target.closest('button'); if (!b) return; ND.bg = b.dataset.bg === 'color' ? $('#ndColor').value : b.dataset.bg; syncND(); };
+$('#ndColor').oninput = e => { ND.bg = e.target.value; syncND(); };
+$('#ndW').onchange = () => { ND.w = Math.max(1, Math.min(MAXDOC, Math.round(+$('#ndW').value) || 1)); syncND(); };
+$('#ndH').onchange = () => { ND.h = Math.max(1, Math.min(MAXDOC, Math.round(+$('#ndH').value) || 1)); syncND(); };
+$('#ndCancel').onclick = $('#ndClose').onclick = closeNew;
+$('#ndModal').onpointerdown = e => { if (e.target === $('#ndModal')) closeNew(); };
+$('#ndGo').onclick = () => { const [w, h] = ndSize(); closeNew(); newDocument(w, h, ND.bg); };
+$('#newBtn').onclick = openNew; $('#hintNew').onclick = e => { e.preventDefault(); openNew(); };
+function newDocument(w, h, bg) {
+  if (dirty() && !confirm('Создать новый холст? Текущая работа не сохранена — она будет закрыта.')) return;
+  endTextEdit(); selShapes = []; updateSelUI(); straight = null;
+  if (gl) [...texLayers].forEach(dropTex);
+  layers = []; multi.clear(); doc = { w, h }; history = []; hpos = 0; savedAt = null; projectName = null; projectHandle = null;
+  const c = mk(w, h); if (bg) { const x = c.getContext('2d'); x.fillStyle = bg; x.fillRect(0, 0, w, h); }
+  addLayer(c, bg ? 'Фон' : 'Слой 1', { x: 0, y: 0, scale: 1 }); sel = 0;
+  if (tool === 'crop') resetCrop(); fitView(); refreshAll(); markSaved();
+  toast(`Новый холст ${w} × ${h} px — добавляйте фото (перетащите в окно), текст и фигуры`, 3000);
+}
 
 // ---------- сохранение картинки: формат, качество, размер ----------
 const EXF = { jpeg: { ext: 'jpg', hint: 'Для фото: маленький файл, открывается везде. Прозрачные места станут белыми.' },
@@ -2406,12 +2836,12 @@ async function saveProject() {
 async function loadProject(f) {
   const buf = await f.arrayBuffer(), dv = new DataView(buf);
   if (!MAGIC.includes(dv.getUint32(0))) throw Error('это не файл проекта');
-  endTextEdit(); selShapes = []; updateSelUI();
+  endTextEdit(); selShapes = []; updateSelUI(); straight = null;
   const hl = dv.getUint32(4, true), meta = JSON.parse(new TextDecoder().decode(new Uint8Array(buf, 8, hl)));
   let off = 8 + hl; const parts = meta.sizes.map(s => { const b = new Blob([new Uint8Array(buf, off, s)], { type: 'image/png' }); off += s; return b; });
   const img = i => i < 0 ? null : createImageBitmap(parts[i], { premultiplyAlpha: 'none', colorSpaceConversion: 'none' });
   const toCanvas = bm => { if (!bm) return null; const c = mk(bm.width, bm.height); c.getContext('2d').drawImage(bm, 0, 0); return c; };
-  layers.forEach(L => { if (L.tex) gl.deleteTexture(L.tex); });
+  if (gl) [...texLayers].forEach(dropTex);
   layers = []; doc = { ...meta.doc }; history = []; hpos = 0; savedAt = null;
   for (const m of meta.layers) {
     const L = addLayer(await img(m.src), m.name, { x: m.x, y: m.y, scale: m.scale, opacity: m.opacity, hidden: !m.visible });
@@ -2461,6 +2891,9 @@ const ICONS = {
   swap: '<path d="M8 3 4 7l4 4M4 7h16M16 21l4-4-4-4M20 17H4"/>',
   message: '<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>',
   close: '<path d="M18 6 6 18M6 6l12 12"/>',
+  filePlus: '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4M12 12v6M9 15h6"/>',
+  ruler: '<path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.41 2.41 0 0 1 0-3.4l2.6-2.6a2.41 2.41 0 0 1 3.4 0Z"/><path d="m14.5 12.5 2-2M11.5 9.5l2-2M8.5 6.5l2-2M17.5 15.5l2-2"/>',
+  bandage: '<path d="M10 10.01h.01M10 14.01h.01M14 10.01h.01M14 14.01h.01M18 6v12M6 6v12"/><rect x="2" y="6" width="20" height="12" rx="2"/>',
   compare: '<path d="M8 19H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h3M16 5h3a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-3M12 3v18"/>',
   check: '<path d="M20 6 9 17l-5-5"/>', refresh: '<path d="M21 12a9 9 0 1 1-2.64-6.36L21 8"/><path d="M21 3v5h-5"/>',
   offline: '<path d="m2 2 20 20"/><path d="M5.8 5.8A7 7 0 0 0 9 19h8.5a4.5 4.5 0 0 0 1.3-.2M21.5 16.5A4.5 4.5 0 0 0 17.5 10h-1.8A7 7 0 0 0 10.5 5.1"/>',
@@ -2568,7 +3001,7 @@ function whenText(t) {
 function renderUpd() {
   const b = $('#updBtn'), m = $('#updMenu'), isNew = hasUpdate(), v = shortVer(updVer());
   b.classList.toggle('new', isNew);
-  b.innerHTML = isNew ? svgI('download') + '<span>Новая версия ' + v + '</span>' : '<span>Версия ' + shortVer(APP_BUILD) + '</span>';
+  b.innerHTML = isNew ? svgI('download') + '<span>Новая версия ' + v + '</span>' : '<span><span class="vw">Версия </span>' + shortVer(APP_BUILD) + '</span>';
   b.title = isNew ? 'Вышла новая версия — нажмите, чтобы скачать' : 'Версия программы. Нажмите, чтобы проверить обновления';
   let st;
   if (UPD.state === 'checking') st = `<div class="us"><b>${svgI('refresh', 'spin')}Проверяем…</b>Смотрим, не вышла ли новая версия.</div>`;
