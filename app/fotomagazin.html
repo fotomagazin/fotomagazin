@@ -1950,12 +1950,17 @@ function healStroke(d) {
     const bw = (bx1 - bx0), bh = (by1 - by0), cand = [];
     for (const k of [1.25, 1.8, 2.6, 3.6, 5]) for (let t = 0; t < 24; t++) { const a = t / 24 * Math.PI * 2; cand.push([Math.round(Math.cos(a) * k * 2 * rr), Math.round(Math.sin(a) * k * 2 * rr), k]); }
     for (const k of [1.1, 1.5]) for (let t = 0; t < 16; t++) { const a = t / 16 * Math.PI * 2; cand.push([Math.round(Math.cos(a) * k * bw), Math.round(Math.sin(a) * k * bh), 1 + k]); }
+    // средний цвет по краям мазка: в заплатке не должно быть ничего, что сильно от него отличается (соседний провод, пятно)
+    let mR = 0, mG = 0, mB = 0; for (let n = 0; n < ring.length; n += 2) { const a = at(x0 + ring[n], y0 + ring[n + 1]); mR += I[a]; mG += I[a + 1]; mB += I[a + 2]; }
+    const rn = ring.length / 2 || 1; mR /= rn; mG /= rn; mB /= rn;
     const score = (dx, dy) => {
       let ov = 0; for (let n = 0; n < inner.length; n += 2) { const ii = inner[n] + dx, jj = inner[n + 1] + dy; if (ii >= 0 && jj >= 0 && ii < W && jj < H && M[jj * W + ii] > .1) ov++; }
       if (ov > inner.length / 2 * .02) return Infinity;   // заплатка не должна браться с закрашенного
       let sc = 0; for (let n = 0; n < ring.length; n += 2) { const a = at(x0 + ring[n], y0 + ring[n + 1]), b = at(x0 + ring[n] + dx, y0 + ring[n + 1] + dy);
         const r1 = I[a] - I[b], g1 = I[a + 1] - I[b + 1], b1 = I[a + 2] - I[b + 2]; sc += r1 * r1 + g1 * g1 + b1 * b1; }
-      return sc / (ring.length / 2 || 1);
+      let inn = 0; for (let n = 0; n < inner.length; n += 2) { const b = at(x0 + inner[n] + dx, y0 + inner[n + 1] + dy);
+        const r1 = I[b] - mR, g1 = I[b + 1] - mG, b1 = I[b + 2] - mB; inn += r1 * r1 + g1 * g1 + b1 * b1; }
+      return sc / rn + .6 * inn / (inner.length / 2 || 1);
     };
     // длинный мазок (провод, царапина): заплатку берём сбоку, а не вдоль — иначе вдоль линии скопируется она же
     const sx = pts[pts.length - 1][0] - pts[0][0], sy = pts[pts.length - 1][1] - pts[0][1], elong = Math.hypot(sx, sy) > rr * 3, perp = Math.atan2(sx, -sy);

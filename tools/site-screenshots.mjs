@@ -109,9 +109,9 @@ await ev(async () => {
   applyAdj(P); thumb(P);
   for (const f of ['700 80px "Unbounded"', '400 80px "Montserrat"', '700 80px "Montserrat"']) await document.fonts.load(f, 'АлтайAa0');
   setTool('text');
-  Object.assign(textOpt, { font: 'Unbounded', size: 250, bold: true, color: '#ffffff', align: 'left' });
+  Object.assign(textOpt, { font: 'Unbounded', size: 250, bold: true, color: '#ffffff', align: 'left', sh: true, shc: '#1a1030' });   // заголовок с тенью (0.3)
   createText({ x: 300, y: 420 }); ta.value = 'АЛТАЙ'; ta.oninput(); endTextEdit();
-  Object.assign(textOpt, { font: 'Montserrat', size: 78, bold: false, color: '#ffe3c4' });
+  Object.assign(textOpt, { font: 'Montserrat', size: 78, bold: false, color: '#ffe3c4', sh: false });
   createText({ x: 318, y: 640 }); ta.value = 'Высота 3 200 м  ·  июль'; ta.oninput(); endTextEdit();
   layers[layers.length - 1].opacity = .92;
   setTool('move'); sel = 1; fitView(); refreshAll();
@@ -160,6 +160,11 @@ await ev(async () => {
 });
 await shot('crop', { x: 0, y: 0, width: 1296, height: 1000 });
 
+// 5б. выпрямление горизонта (0.3): наклон и частая сетка
+await ev(async () => { $('#cRatio').value = 'orig'; setTool('crop'); setStraighten(-4); });
+await shot('straight', { x: 0, y: 0, width: 1296, height: 1000 });
+await ev(() => { setTool('move'); $('#cRatio').value = 'free'; });
+
 // 6. выделение овалом вокруг солнца
 await ev(async () => {
   setTool('select'); setSelMode('ellipse'); sel = 0; refreshAll();
@@ -174,6 +179,11 @@ await ev(async () => {
 });
 await shot('text', { x: 0, y: 0, width: 1296, height: 1000 });
 await ev(() => endTextEdit());
+
+// 7б. окно «Новый холст» (0.3)
+await ev(async () => { ND.p = 'story'; ND.bg = '#ffffff'; openNew(); await new Promise(r => setTimeout(r, 300)); });
+await shot('new', await ev(() => R(document.querySelector('.nd'))));
+await ev(() => closeNew());
 
 // 8. картинки для сайта (только фото, без текста): до/после, стили, эффекты
 const pics = await ev(async () => {
@@ -199,5 +209,24 @@ const pics = await ev(async () => {
   return out;
 });
 for (const [k, v] of Object.entries(pics)) { writeFileSync(`${OUT}/${k}.jpg`, Buffer.from(v.split(',')[1], 'base64')); console.log('saved', k); }
+
+// 9. восстанавливающая кисть (0.3): на небе провода и пятна → убираем настоящей кистью программы
+const heal = await ev(async () => {
+  const P = layers[0], x = P.src.getContext('2d'), out = {};
+  const pic = () => { const c = compositeCanvas([P]), s = mk(2400, 1600), t = s.getContext('2d'); t.imageSmoothingQuality = 'high'; t.drawImage(c, 0, 0, 2400, 1600); return s.toDataURL('image/jpeg', .86); };
+  const wires = [[0, 520, 1500, 640, 3000, 480, 5], [0, 572, 1500, 700, 3000, 536, 4]], spots = [[620, 240, 15], [1180, 330, 11], [2350, 270, 17], [1760, 420, 12]];
+  x.strokeStyle = 'rgba(14,10,22,.92)'; x.lineCap = 'round';
+  for (const [ax, ay, cx, cy, bx, by, w] of wires) { x.lineWidth = w; x.beginPath(); x.moveTo(ax, ay); x.quadraticCurveTo(cx, cy, bx, by); x.stroke(); }
+  x.filter = 'blur(3px)'; x.fillStyle = 'rgba(20,14,30,.8)'; for (const [a, b, r] of spots) { x.beginPath(); x.arc(a, b, r, 0, 7); x.fill(); } x.filter = 'none';
+  P.texFrom = null; applyAdj(P); out['heal-before'] = pic();
+  brush.hard = .5; brush.flow = 1;
+  for (const [ax, ay, cx, cy, bx, by] of wires) {
+    const pts = []; for (let t = 0; t <= 1.0001; t += .008) pts.push({ x: (1 - t) * (1 - t) * ax + 2 * (1 - t) * t * cx + t * t * bx, y: (1 - t) * (1 - t) * ay + 2 * (1 - t) * t * cy + t * t * by });
+    brush.size = 24; for (let i = 0; i < pts.length - 1; i += 10) healStroke({ L: P, pts: pts.slice(i, i + 11), off: null });
+  }
+  brush.size = 54; for (const [a, b] of spots) healStroke({ L: P, pts: [{ x: a, y: b }], off: null });
+  out['heal-after'] = pic(); return out;
+});
+for (const [k, v] of Object.entries(heal)) { writeFileSync(`${OUT}/${k}.jpg`, Buffer.from(v.split(',')[1], 'base64')); console.log('saved', k); }
 
 ws.close(); chrome.kill(); process.exit(0);
